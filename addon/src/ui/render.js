@@ -18,7 +18,7 @@ function animateScore(to) { // numărare 400 ms + culoarea inelului
     ring.style.setProperty("--c", to >= 85 ? "var(--green)" : to >= 50 ? "var(--amber-f)" : "var(--red)");
     shown = to;
     (function step(t) {
-        const k = Math.min(1, (t - t0) / 400), v = Math.round(from + (to - from) * k);
+        const k = Math.max(0, Math.min(1, (t - t0) / 400)), v = Math.round(from + (to - from) * k);
         num.textContent = v; ring.style.setProperty("--p", v);
         if (k < 1) requestAnimationFrame(step);
     })(t0);
@@ -87,7 +87,7 @@ export function render(o) {
     list.innerHTML = html;
 
     const fixable = open.filter((i) => i.fix).length;
-    $("fixall").textContent = fixable ? `Fix all (${fixable} automate)` : "Fix all";
+    $("fixall").textContent = fixable ? `Fix all (${fixable} ${fixable === 1 ? "automat" : "automate"})` : "Fix all";
     $("fixall").disabled = !fixable || !!o.busy;
 }
 

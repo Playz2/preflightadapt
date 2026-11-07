@@ -2,6 +2,10 @@
   "hosting": {
     "public": "public",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "headers": [
+      { "source": "/", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+      { "source": "**/*.@(html|js|css|json)", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+    ],
     "rewrites": [
       { "source": "/api/ocr", "function": { "functionId": "ocr", "region": "europe-west1" } },
       { "source": "/api/audit", "function": { "functionId": "audit", "region": "europe-west1" } },

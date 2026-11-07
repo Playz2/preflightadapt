@@ -21,6 +21,7 @@
             <span id="kit" class="kit"></span>
         </header>
 
+        <div class="summary">
         <div id="ring" class="ring"><div><span id="score">-</span><small>din 100</small></div></div>
         <div class="chips">
             <button id="chip-brand" class="chip" data-axis="brand"><b>-</b><span>Brand</span></button>
@@ -28,15 +29,14 @@
             <button id="chip-legal" class="chip" data-axis="legal"><b>-</b><span>Legal</span></button>
             <button id="chip-ai_act" class="chip" data-axis="ai_act"><b>-</b><span>AI Act</span></button>
         </div>
-
-        <div class="tol-box">
-            <div class="tol-head">
-                <label for="minmin-area">Toleranță suprafață minimăminimă</label>
-                <b id="minmin-area-val">00.5%</b>
-            </div>
-            <input id="minmin-area" type="range" min="00" max="2020" step="0.50.5" value="00.5" />
-            <small>Ignoră elementele cu suprafața &ltlt; <span id="minmin-area-inline">00.5</span>% din pagină</small>
         </div>
+
+        <details class="tol-box">
+            <summary><span>Toleranță suprafață minimă</span><b id="min-area-val">0.5%</b></summary>
+            <label class="sr-only" for="min-area">Toleranță suprafață minimă</label>
+            <input id="min-area" type="range" min="0" max="20" step="0.5" value="0.5" />
+            <small>Ignoră elementele cu suprafața &lt; <span id="min-area-inline">0.5</span>% din pagină</small>
+        </details>
 
         <div id="status" class="status" role="status"></div>
         <div id="issues" class="issues"></div>
@@ -45,6 +45,6 @@
             <button id="fixall" class="primary" disabled>Fix all</button>
             <button id="run" class="secondary" disabled>Rulează PreFlight</button>
         </div>
-        <p class="disclaimer">Suport decizional, nu consultanță juridică. Decizia finală rămâne la tine.</p>
+        <p class="disclaimer">Suport decizional, nu consultanță juridică.</p>
     </body>
 </html>
