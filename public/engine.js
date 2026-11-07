@@ -35,7 +35,8 @@ export function splitTextAndBg(ctx, b) {
   const pts = [];
   for (let i = 0; i < px.length; i += 8) pts.push([px[i], px[i + 1], px[i + 2]]);
   const L = pts.map((p) => 0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2]);
-  let c0 = Math.min(...L), c1 = Math.max(...L), lab = [];
+  let c0 = Infinity, c1 = -Infinity, lab = [];
+  for (const v of L) { if (v < c0) c0 = v; if (v > c1) c1 = v; } // fără spread: un bloc mare depășește limita de argumente
   for (let it = 0; it < 6; it++) {
     lab = L.map((v) => (Math.abs(v - c0) <= Math.abs(v - c1) ? 0 : 1));
     const m0 = L.filter((_, i) => lab[i] === 0), m1 = L.filter((_, i) => lab[i] === 1);
