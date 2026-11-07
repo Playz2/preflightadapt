@@ -1,6 +1,7 @@
 // PreFlight: pagina de prezentare. Nu atinge motorul: folosește doar score() din engine.js,
 // ca simularea să nu se poată îndepărta de formula reală.
 import { score } from "./engine.js";
+import { setButtonUnavailable } from "./button-state.js";
 
 // ---------------- configurare ușor de editat ----------------
 const ADOBE_EXPRESS_DEMO_URL = "https://new.express.adobe.com/";
@@ -201,9 +202,9 @@ function initSimulation() {
     const f = openAuto();
     const discOpen = !isFixed("disc");
     fixBtn.textContent = busy ? "Aplic modificările…" : f > 1 ? `Fix all (${f} automate)` : f === 1 || discOpen ? "Fix all (1 automat)" : "Nimic de reparat automat";
-    fixBtn.disabled = busy || (!f && !discOpen);
+    setButtonUnavailable(fixBtn, busy || (!f && !discOpen), busy ? "Așteaptă aplicarea modificărilor" : "Nu există probleme de reparat automat");
     fixBtn.setAttribute("aria-busy", busy ? "true" : "false");
-    $("#simReset").disabled = busy;
+    setButtonUnavailable($("#simReset"), busy, "Așteaptă aplicarea modificărilor");
   }
   const problems = (n) => (n === 1 ? "1 problemă deschisă" : `${n} probleme deschise`);
 
@@ -433,7 +434,20 @@ function initLaunchpad() {
 
 // ---------------- sandboxul: aplicația reală, în iframe, fără modificări ----------------
 let dragKey = null, toolBusy = false;
+let toolRun = null;
 const frame = () => $("#toolFrame");
+let toolOpener = null;
+function openTool() {
+  const dialog = $("#toolDialog");
+  if (dialog.open) return;
+  toolOpener = document.activeElement;
+  frame().loading = "eager";
+  dialog.showModal();
+  document.documentElement.classList.add("tool-open");
+}
+function closeTool() {
+  $("#toolDialog").close();
+}
 
 function toolMessage(text, isError = false) {
   const el = $("#toolMsg");
@@ -441,10 +455,11 @@ function toolMessage(text, isError = false) {
   el.textContent = text;
   el.classList.toggle("is-error", isError);
 }
-async function toolDoc() {
+async function toolDoc(signal) {
   const f = frame();
   f.loading = "eager";
   for (let i = 0; i < 150; i++) {
+    signal?.throwIfAborted();
     let d = null;
     try { d = f.contentDocument; } catch { d = null; }
     if (d && d.querySelector("#file")?.onchange) return d; // app.js și-a terminat inițializarea
@@ -465,11 +480,12 @@ function setFiles(doc, selector, files) {
   input.dispatchEvent(new Event("change"));
 }
 // așteaptă o rulare completă a aplicației, urmărind textul de stare
-function waitForRun(doc, timeout = 120000) {
+function waitForRun(doc, signal, timeout = 120000) {
   const status = doc.querySelector("#status");
   return new Promise((resolve, reject) => {
     let started = false;
-    const finish = (fn, arg) => { obs.disconnect(); clearTimeout(timer); fn(arg); };
+    const finish = (fn, arg) => { obs.disconnect(); clearTimeout(timer); signal?.removeEventListener("abort", abort); fn(arg); };
+    const abort = () => finish(reject, signal.reason);
     const check = () => {
       const t = status.textContent;
       if (/Citesc|Analizez/.test(t)) started = true;
@@ -481,49 +497,67 @@ function waitForRun(doc, timeout = 120000) {
     const obs = new MutationObserver(check);
     obs.observe(status, { childList: true, characterData: true, subtree: true });
     const timer = setTimeout(() => finish(reject, new Error("Verificarea durează prea mult. Încearcă din nou.")), timeout);
+    signal?.addEventListener("abort", abort, { once: true });
+    if (signal?.aborted) abort();
   });
 }
-async function waitForProvenance(doc, timeout = 15000) {
+async function waitForProvenance(doc, signal, timeout = 15000) {
   const t0 = Date.now();
   while (Date.now() - t0 < timeout) {
+    signal?.throwIfAborted();
     if (/Content Credentials găsite/.test(doc.querySelector("#prov")?.textContent || "")) return;
     await wait(150);
   }
 }
-const setTestButtons = (off) => $$("[data-test]").forEach((b) => { b.disabled = off; });
+const setTestButtons = (off) => $$("[data-test]").forEach((b) => {
+  setButtonUnavailable(b, off, "Așteaptă finalizarea testului curent");
+});
 
 async function runAsset(key) {
   if (toolBusy) return;
   toolBusy = true;
+  const controller = new AbortController();
+  toolRun = controller;
+  const { signal } = controller;
   setTestButtons(true);
   try {
     selectTab($("#tab-live"));
-    $("#sandbox").scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+    openTool();
     toolMessage("Încarc imaginea în sandbox…");
-    const doc = await toolDoc();
+    const doc = await toolDoc(signal);
+    signal.throwIfAborted();
     const asset = ASSETS[key];
     const adFile = await toFile(asset);
+    signal.throwIfAborted();
     const source = asset.source ? await toFile(asset.source) : null;
-    const first = waitForRun(doc);
+    signal.throwIfAborted();
+    const first = waitForRun(doc, signal);
     setFiles(doc, "#file", [adFile]);
     toolMessage("Verific reclama…");
     await first;
+    signal.throwIfAborted();
     if (source) {
       // postarea exportată nu mai are manifestul: îl citim din imaginea Firefly originală
       toolMessage("Adaug imaginea Firefly originală, pentru Content Credentials…");
       setFiles(doc, "#srcfile", [source]);
-      await waitForProvenance(doc);
-      const second = waitForRun(doc);
+      await waitForProvenance(doc, signal);
+      signal.throwIfAborted();
+      const second = waitForRun(doc, signal);
       doc.querySelector("#run").click();
       await second;
+      signal.throwIfAborted();
     }
     toolMessage("");
   } catch (e) {
+    if (signal.aborted) return;
     console.error(e);
     toolMessage(`${e.message} Simularea de la începutul paginii merge și fără backend.`, true);
   } finally {
-    toolBusy = false;
-    setTestButtons(false);
+    if (toolRun === controller) {
+      toolRun = null;
+      toolBusy = false;
+      setTestButtons(false);
+    }
   }
 }
 
@@ -532,6 +566,10 @@ function attachToTool() {
   try { doc = frame().contentDocument; } catch { return; }
   const status = doc?.querySelector("#status");
   if (!status) return;
+  // Escape trebuie să închidă și când focusul este în aplicația din iframe.
+  doc.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !e.defaultPrevented) { e.preventDefault(); closeTool(); }
+  });
   // cache-ul: starea reală, citită din ultima rulare
   const dot = $("#cacheDot"), text = $("#cacheText");
   new MutationObserver(() => {
@@ -551,6 +589,22 @@ function attachToTool() {
 }
 
 function initSandbox() {
+  $$("[data-open-tool]").forEach((button) => button.addEventListener("click", openTool));
+  $("#closeTool").addEventListener("click", closeTool);
+  $("#toolDialog").addEventListener("close", () => {
+    toolRun?.abort();
+    toolRun = null;
+    toolBusy = false;
+    dragKey = null;
+    setTestButtons(false);
+    toolMessage("");
+    // Un iframe nou elimină imaginea, rezultatele și cererile sesiunii închise.
+    const freshFrame = frame().cloneNode(false);
+    freshFrame.addEventListener("load", attachToTool);
+    frame().replaceWith(freshFrame);
+    document.documentElement.classList.remove("tool-open");
+    toolOpener?.focus();
+  });
   frame().addEventListener("load", attachToTool);
   if (frame().contentDocument?.readyState === "complete") attachToTool();
   $$("[data-test]").forEach((b) => b.addEventListener("click", () => runAsset(b.dataset.test)));

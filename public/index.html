@@ -240,16 +240,23 @@
               <h3 class="sub-title">Sandbox web: planul B, integrat</h3>
               <p class="sub-lead">Motorul real, fără Express: OCR, Content Credentials, contrast, paletă, audit AI și Fix all pe canvas.</p>
             </div>
-            <a class="btn btn-outline btn-sm" href="app.html" target="_blank" rel="noopener">Deschide pe tot ecranul <span aria-hidden="true">↗</span></a>
+            <button type="button" class="btn btn-outline btn-sm" data-open-tool>Deschide PreFlight</button>
           </div>
           <div class="tabs" role="tablist" aria-label="Mod de demo" data-tabs>
             <button type="button" role="tab" id="tab-live" aria-controls="panel-live" aria-selected="true">Sandbox live</button>
             <button type="button" role="tab" id="tab-video" aria-controls="panel-video" aria-selected="false" tabindex="-1">Video de backup (70 s)</button>
           </div>
-          <p class="tool-msg" id="toolMsg" role="status" hidden></p>
           <div role="tabpanel" id="panel-live" aria-labelledby="tab-live">
-            <iframe id="toolFrame" class="tool-frame" src="app.html" title="Aplicația PreFlight: încarcă o reclamă și rulează verificarea" loading="lazy"></iframe>
+            <button type="button" class="btn btn-primary" data-open-tool>Încarcă o reclamă în PreFlight</button>
           </div>
+          <dialog id="toolDialog" class="tool-dialog" aria-labelledby="toolDialogTitle">
+            <div class="tool-dialog-head">
+              <h2 id="toolDialogTitle">PreFlight</h2>
+              <button type="button" id="closeTool" class="tool-close" aria-label="Închide PreFlight" autofocus>×</button>
+            </div>
+            <p class="tool-msg" id="toolMsg" role="status" hidden></p>
+            <iframe id="toolFrame" class="tool-frame" src="app.html" title="Aplicația PreFlight: încarcă o reclamă și rulează verificarea" loading="lazy"></iframe>
+          </dialog>
           <div role="tabpanel" id="panel-video" aria-labelledby="tab-video" hidden>
             <div class="video-box" id="videoBox">
               <div class="video-empty" id="videoEmpty">

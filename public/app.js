@@ -1,6 +1,7 @@
 import { analyze, boxAreaPct, checkAiAct, score } from "./engine.js";
 import { applyFixes } from "./fixer.js";
 import { readProvenance, mergeProvenance } from "./provenance.js";
+import { setButtonUnavailable } from "./button-state.js";
 
 // Pe Firebase Hosting rămâne "" (rewrite /api/* -> funcții).
 // Dacă rulezi local cu `npx serve public`, pune aici URL-ul site-ului deployat, ex. "https://proiect.web.app".
@@ -166,9 +167,9 @@ async function runPreflight() {
     console.error(e); render({ error: e.message });
   } finally {
     S.busy = false;
-    $("#new-image").disabled = false;
+    setButtonUnavailable($("#new-image"), false);
     const n = S.issues.filter((i) => i.fix && !i.fixed && i.fix.kind !== "humanPrice").length;
-    $("#fixall").disabled = !n;
+    setButtonUnavailable($("#fixall"), !n, "Nu există probleme de reparat automat");
   }
 }
 
@@ -198,7 +199,7 @@ function logAudit(sc) {
 async function loadAd(file) {
   if (!file || S.busy) return;
   S.busy = true;
-  $("#new-image").disabled = true;
+  setButtonUnavailable($("#new-image"), true, "Așteaptă încărcarea imaginii");
   try {
     const original = await fileToCanvas(file);
     const source = await readProvenance(file);
@@ -223,7 +224,7 @@ async function loadAd(file) {
     render({ error: `Imaginea nu a putut fi încărcată: ${e.message}` });
   } finally {
     S.busy = false;
-    $("#new-image").disabled = false;
+    setButtonUnavailable($("#new-image"), false);
   }
 }
 async function addSources(files) {
@@ -363,8 +364,9 @@ function render(o) {
     $("#status").textContent = o.cached ? "Rezultat din cache (aceeași imagine)" : open.length === 1 ? "1 problemă deschisă" : `${open.length} probleme deschise`;
   }
   const fixable = open.filter((i) => i.fix && i.fix.kind !== "humanPrice").length;
-  $("#fixall").disabled = !fixable || S.busy; $("#fixall").textContent = fixable ? `Fix all (${fixable} ${fixable === 1 ? "automat" : "automate"})` : "Nimic de reparat automat";
-  $("#new-image").disabled = S.busy;
+  setButtonUnavailable($("#fixall"), !fixable || S.busy, S.busy ? "Așteaptă finalizarea verificării" : "Nu există probleme de reparat automat");
+  $("#fixall").textContent = fixable ? `Fix all (${fixable} ${fixable === 1 ? "automat" : "automate"})` : "Nimic de reparat automat";
+  setButtonUnavailable($("#new-image"), S.busy, "Așteaptă finalizarea verificării");
   $("#before").classList.toggle("on", S.view === "before"); $("#after").classList.toggle("on", S.view === "after");
 }
 

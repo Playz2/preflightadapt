@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=5" />
+  <link rel="stylesheet" href="styles.css?v=6" />
   <script>
     // În pagina de prezentare, aplicația rulează într-un iframe, fără antet propriu.
     if (window.self !== window.top) document.documentElement.classList.add("embedded");
@@ -80,9 +80,9 @@
       </div>
       <div id="prov" class="prov"></div>
       <div id="status" class="status" role="status"></div>
-      <div id="issues" class="issues"></div>
+      <div id="issues" class="issues" role="region" aria-label="Probleme identificate" tabindex="0"></div>
       <div class="actions">
-        <button id="fixall" class="primary" disabled>Fix all</button>
+        <button id="fixall" class="primary" aria-disabled="true" data-unavailable-reason="Încarcă și verifică o imagine mai întâi">Fix all</button>
         <button id="run" class="secondary">Re-verifică</button>
       </div>
       <p class="disclaimer">Suport decizional, nu consultanță juridică. Decizia finală rămâne la tine.</p>

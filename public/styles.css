@@ -8,8 +8,8 @@
 html, body { height: 100%; }
 body { margin: 0; font: 14px/1.45 Inter, system-ui, sans-serif; color: var(--ink); background: var(--surface); }
 button { font: inherit; cursor: pointer; transition: background-color .15s, border-color .15s, color .15s, transform .15s; }
-button:disabled { opacity: .55; cursor: default; }
-button:not(:disabled):active { transform: translateY(1px); }
+button:is(:disabled, [aria-disabled="true"]) { opacity: .55; cursor: default; }
+button:not(:disabled):not([aria-disabled="true"]):active { transform: translateY(1px); }
 :focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
@@ -23,7 +23,7 @@ header { height: 60px; background: var(--ink); color: #fff; display: flex; align
 .kit { color: var(--indigo-s); font-size: 13px; white-space: nowrap; }
 
 /* structură */
-main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; padding: 16px; height: calc(100vh - 60px); }
+main { display: grid; grid-template-columns: minmax(0, 1fr) clamp(380px, 34vw, 480px); gap: 16px; padding: 16px; height: calc(100vh - 60px); }
 .embedded header { display: none; }
 .embedded main { height: 100vh; }
 .left { min-width: 0; display: flex; flex-direction: column; }
@@ -58,15 +58,17 @@ main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; pa
 
 /* panoul de rezultate */
 .panel { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 16px;
-         display: flex; flex-direction: column; min-height: 0; }
-.ring { --p: 0; --c: var(--border); width: 124px; height: 124px; border-radius: 50%; margin: 0 auto 12px;
+         display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+.panel > :not(.issues) { flex-shrink: 0; }
+.panel-top { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.ring { --p: 0; --c: var(--border); width: 80px; height: 80px; flex-shrink: 0; border-radius: 50%; margin: 0;
         display: grid; place-items: center; background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--border) 0); }
-.ring > div { width: 100px; height: 100px; border-radius: 50%; background: #fff; display: grid; place-items: center; align-content: center; }
-#score { font: 700 32px Poppins, sans-serif; line-height: 1; }
+.ring > div { width: 64px; height: 64px; border-radius: 50%; background: #fff; display: grid; place-items: center; align-content: center; }
+#score { font: 700 26px Poppins, sans-serif; line-height: 1; }
 .ring small { color: var(--slate); font-size: 11px; }
-.chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+.chips { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
 .chip { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; text-align: center; padding: 6px 2px; transition: background-color .2s, color .2s, border-color .2s; }
-.chip b { display: block; font: 700 16px Poppins, sans-serif; }
+.chip b { display: inline; margin-right: 5px; font: 700 16px Poppins, sans-serif; }
 .chip span { font-size: 11px; color: var(--slate); }
 .chip.ok { background: var(--green-l); border-color: transparent; color: var(--green); }
 .chip.warn { background: var(--amber-l); border-color: transparent; color: var(--amber); }
@@ -84,7 +86,8 @@ main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; pa
 .status { font-size: 12px; color: var(--slate); margin: 2px 0 8px; min-height: 17px; }
 
 /* lista de probleme: benzi de zbor, cu bara de severitate la stânga */
-.issues { flex: 1; min-height: 0; overflow-y: auto; padding-right: 2px; }
+.issues { flex: 1 0 220px; min-height: 220px; overflow-y: auto; scrollbar-gutter: stable; padding-right: 4px; }
+.issues:focus-visible { outline-offset: -2px; }
 .card { --sev: var(--indigo); --bg: var(--indigo-l); border-left: 4px solid var(--sev); background: var(--bg);
         border-radius: 4px 10px 10px 4px; padding: 10px 11px; margin-bottom: 8px; display: grid; grid-template-columns: minmax(0, 1fr) auto;
         gap: 8px; align-items: start; animation: in .25s ease; }
@@ -110,10 +113,10 @@ main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; pa
 @keyframes sh { to { background-position: -200% 0; } }
 @keyframes in { from { opacity: 0; transform: translateY(4px); } }
 
-.actions { display: grid; gap: 8px; margin-top: 10px; }
+.actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 10px; }
 .primary { background: var(--indigo); color: #fff; border: 0; border-radius: 12px; padding: 13px; font-weight: 700; font-size: 15px; }
-.primary:not(:disabled):hover { background: #3730A3; }
-.primary:disabled { opacity: 1; background: var(--border); color: var(--slate); }
+.primary:not(:disabled):not([aria-disabled="true"]):hover { background: #3730A3; }
+.primary:is(:disabled, [aria-disabled="true"]) { opacity: 1; background: var(--border); color: var(--slate); }
 .secondary { background: #fff; color: var(--indigo); border: 1px solid var(--indigo); border-radius: 12px; padding: 9px; font-weight: 600; }
 .secondary:hover { background: var(--indigo-l); }
 .disclaimer { font-size: 11px; color: var(--slate); text-align: center; margin: 8px 0 0; }
@@ -124,7 +127,16 @@ main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; pa
   .brand .tag { display: none; }
   .drop.big { min-height: 300px; }
   #view, .embedded #view { max-height: 70vh; }
-  .issues { overflow: visible; }
+  .panel { overflow: visible; }
+  .issues { flex: none; min-height: 0; overflow: visible; scrollbar-gutter: auto; }
+}
+@media (max-width: 420px) {
+  .panel { padding: 12px; }
+  .panel-top { gap: 8px; }
+  .ring { width: 68px; height: 68px; }
+  .ring > div { width: 54px; height: 54px; }
+  .chip b { display: block; margin-right: 0; }
+  .actions { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
