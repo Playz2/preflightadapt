@@ -83,10 +83,17 @@ export function expandToShape(ctx, b, fill, max = 220) {
   return { x: l, y: t, w: r - l, h: btm - t };
 }
 
+// procentul de suprafață ocupat de o casetă (bbox/shape) din întreaga imagine (0-100)
+export function boxAreaPct(box, W, H) {
+  if (!box || !W || !H) return 0;
+  return ((Math.max(0, box.w) * Math.max(0, box.h)) / (W * H)) * 100;
+}
+
 // ---------- verificările ----------
-export function analyze(ctx, blocks, kit) {
+export function analyze(ctx, blocks, kit, minAreaPct = 0) {
   const issues = [], pageBg = pageBackground(ctx), pal = kit.palette.map(hexToRgb);
-  const scale = 1080 / ctx.canvas.width;
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  const scale = 1080 / W;
   const norm = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
   const discPrefix = kit.requiredDisclaimer ? norm(kit.requiredDisclaimer).slice(0, 25) : "";
   for (const b of blocks) {
@@ -96,6 +103,10 @@ export function analyze(ctx, blocks, kit) {
     const s = splitTextAndBg(ctx, b.bbox);
     if (!s) continue;
     b.textColor = toHex(s.text); b.bgColor = toHex(s.bg);
+    const hasShape = dist(s.bg, pageBg) > 60 && chroma(s.bg) >= 12;
+    const shape = hasShape ? expandToShape(ctx, b.bbox, s.bg) : null;
+    b.effectiveAreaPct = shape ? Math.max(boxAreaPct(b.bbox, W, H), boxAreaPct(shape, W, H)) : boxAreaPct(b.bbox, W, H);
+    if (b.effectiveAreaPct < minAreaPct) continue; // ignoră elementele cu suprafața < x%
     // 1. contrast WCAG
     const ratio = contrast(s.text, s.bg), large = b.fontPx * scale >= 24, min = large ? 3 : 4.5;
     if (ratio < min) issues.push({
@@ -105,8 +116,8 @@ export function analyze(ctx, blocks, kit) {
       legalBasis: "WCAG 2.2, criteriul 1.4.3",
       fix: { kind: "textColor", blockId: b.id, hex: bestTextOn(s.bg) },
     });
-    // 2. buton în afara paletei: fundalul blocului diferă de fundalul paginii și e colorat
-    if (dist(s.bg, pageBg) > 60 && chroma(s.bg) >= 12) {
+    // 2. buton / formă în afara paletei: fundalul blocului diferă de fundalul paginii și e colorat
+    if (hasShape && shape) {
       const d = pal.map((p) => deltaE(s.bg, p)), dmin = Math.min(...d);
       if (dmin > 20) {
         const target = pal[d.indexOf(dmin)];
@@ -115,8 +126,7 @@ export function analyze(ctx, blocks, kit) {
           title: `Culoare ${toHex(s.bg)} în afara paletei`,
           explanation: `ΔE ${dmin.toFixed(0)} față de ${toHex(target)} din brand kit.`,
           legalBasis: "Ghid de brand",
-          fix: { kind: "fill", blockId: b.id, hex: toHex(target), textHex: bestTextOn(target),
-                 shape: expandToShape(ctx, b.bbox, s.bg) },
+          fix: { kind: "fill", blockId: b.id, hex: toHex(target), textHex: bestTextOn(target), shape },
         });
       }
     }

@@ -1,7 +1,15 @@
 const $ = (id) => document.getElementById(id);
 const SEV = { error: "EROARE", warning: "ATENȚIE", info: "INFO" };
 const AX = { brand: "Brand", accessibility: "Accesibilitate", legal: "Legal", ai_act: "AI Act" };
+const CURRENCIES = ["RON", "EUR", "USD"];
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function sanitizePriceNumber(val) {
+    const cleaned = String(val || "").replace(/[^0-9.,]/g, "").replace(/^[0.,]+/, "");
+    const sepIdx = cleaned.search(/[.,]/);
+    if (sepIdx === -1) return cleaned;
+    return `${cleaned.slice(0, sepIdx)}${cleaned[sepIdx]}${cleaned.slice(sepIdx + 1).replace(/[.,]/g, "")}`;
+}
 
 let shown = 0, last = {}, filter = null;
 
@@ -83,24 +91,57 @@ export function render(o) {
     $("fixall").disabled = !fixable || !!o.busy;
 }
 
-// butoanele de pe carduri: „Fix” aplică direct, „Cere preț” deschide un câmp pentru omul care decide
+// butoanele de pe carduri: „Fix” aplică direct, „Cere preț” deschide câmpul numeric + selectorul de monedă (RON/EUR/USD)
 export function initCards({ onFix, onPrice }) {
     const list = $("issues");
     list.addEventListener("click", (e) => {
         const fix = e.target.closest("[data-fix]"), ask = e.target.closest("[data-price]");
         if (fix) onFix(last.issues[Number(fix.dataset.fix)]);
         if (!ask) return;
-        const input = document.createElement("input");
-        input.className = "price";
-        input.placeholder = "Preț minim din ultimele 30 de zile, ex. 129 lei";
-        input.setAttribute("aria-label", "Preț de referință: prețul minim din ultimele 30 de zile");
         const issue = last.issues[Number(ask.dataset.price)];
-        input.addEventListener("keydown", (ev) => {
-            if (ev.key === "Escape") render(last);
-            if (ev.key === "Enter" && input.value.trim()) onPrice(issue, input.value.trim());
+        const cardEl = ask.closest(".card");
+        ask.remove();
+
+        const row = document.createElement("div");
+        row.className = "price-row";
+        row.innerHTML = `<input type="text" inputmode="decimal" class="price-num" placeholder="Preț 30 zile (ex: 129)" aria-label="Valoare preț de referință">`
+            + `<select class="price-cur" aria-label="Monedă">${CURRENCIES.map((c) => `<option value="${c}">${c}</option>`).join("")}</select>`
+            + `<button type="button" class="mini price-ok">OK</button>`;
+        cardEl.appendChild(row);
+
+        const numInp = row.querySelector(".price-num");
+        const curSel = row.querySelector(".price-cur");
+        const okBtn = row.querySelector(".price-ok");
+        numInp.focus();
+
+        numInp.addEventListener("beforeinput", (ev) => {
+            if (!ev.data) return;
+            if (/[^0-9.,]/.test(ev.data)) { ev.preventDefault(); return; }
+            const start = numInp.selectionStart ?? numInp.value.length;
+            const end = numInp.selectionEnd ?? numInp.value.length;
+            const nextVal = numInp.value.slice(0, start) + ev.data + numInp.value.slice(end);
+            if (/^[0.,]/.test(nextVal)) ev.preventDefault();
         });
-        ask.replaceWith(input);
-        input.focus();
+        numInp.addEventListener("input", () => {
+            const clean = sanitizePriceNumber(numInp.value);
+            if (numInp.value !== clean) numInp.value = clean;
+        });
+
+        const submit = () => {
+            const num = sanitizePriceNumber(numInp.value).replace(/^[0.,]+|[.,]+$/g, "");
+            const val = parseFloat(num.replace(",", "."));
+            if (!num || /^[0.,]/.test(num) || !Number.isFinite(val) || val <= 0) { numInp.focus(); return; }
+            const cur = CURRENCIES.includes(curSel.value) ? curSel.value : "RON";
+            onPrice(issue, `${num} ${cur}`);
+        };
+
+        const onKey = (ev) => {
+            if (ev.key === "Escape") render(last);
+            if (ev.key === "Enter") { ev.preventDefault(); submit(); }
+        };
+        numInp.addEventListener("keydown", onKey);
+        curSel.addEventListener("keydown", onKey);
+        okBtn.addEventListener("click", submit);
     });
 }
 
@@ -114,4 +155,3 @@ export function initChips() {
         });
     }
 }
-

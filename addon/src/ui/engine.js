@@ -19,8 +19,13 @@ function rgbToLab([r, g, b]) { // sRGB -> CIE Lab (D65)
 const deltaE = (a, b) => Math.hypot(...rgbToLab(a).map((v, i) => v - rgbToLab(b)[i]));
 const chroma = (rgb) => { const [, a, b] = rgbToLab(rgb); return Math.hypot(a, b); };
 
+export function boxAreaPct(box, page) {
+    if (!box || !page?.width || !page?.height) return 0;
+    return ((Math.max(0, box.w) * Math.max(0, box.h)) / (page.width * page.height)) * 100;
+}
+
 // ---------- 1. contrast WCAG pe pixeli reali ----------
-export async function checkContrast(pngBlob, scan) {
+export async function checkContrast(pngBlob, scan, minAreaPct = 0) {
     const bmp = await createImageBitmap(pngBlob);
     const cv = new OffscreenCanvas(bmp.width, bmp.height);
     const ctx = cv.getContext("2d", { willReadFrequently: true });
@@ -28,6 +33,7 @@ export async function checkContrast(pngBlob, scan) {
     const sx = bmp.width / scan.page.width, sy = bmp.height / scan.page.height;
     const issues = [];
     for (const t of scan.texts) {
+        if (boxAreaPct(t.bounds, scan.page) < minAreaPct) continue;
         const x = Math.max(0, Math.floor(t.bounds.x * sx)), y = Math.max(0, Math.floor(t.bounds.y * sy));
         const w = Math.max(1, Math.min(bmp.width - x, Math.ceil(t.bounds.w * sx)));
         const h = Math.max(1, Math.min(bmp.height - y, Math.ceil(t.bounds.h * sy)));
@@ -58,10 +64,11 @@ export async function checkContrast(pngBlob, scan) {
     return issues;
 }
 
-// ---------- 2. culori în afara paletei (doar forme colorate, ignorăm neutrele) ----------
-export function checkPalette(scan, kit) {
+// ---------- 2. culori în afara paletei (doar forme colorate, ignorăm neutrele și suprafețele < minAreaPct%) ----------
+export function checkPalette(scan, kit, minAreaPct = 0) {
     const pal = kit.palette.map(hexToRgb), issues = [];
     for (const s of scan.shapes) {
+        if (boxAreaPct(s.bounds, scan.page) < minAreaPct) continue;
         const c = hexToRgb(s.fill);
         if (chroma(c) < 12) continue; // gri/alb/negru: nu sunt "culori de brand"
         const dists = pal.map((p) => deltaE(c, p)), dmin = Math.min(...dists);

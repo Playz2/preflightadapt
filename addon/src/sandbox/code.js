@@ -1,5 +1,5 @@
 import addOnSandboxSdk from "add-on-sdk-document-sandbox";
-import { editor, colorUtils } from "express-document-sdk";
+import { editor, colorUtils, constants } from "express-document-sdk";
 
 const { runtime } = addOnSandboxSdk.instance;
 const nodesById = new Map();
@@ -47,7 +47,22 @@ function setFill(id, h) {
 
 function replaceText(id, txt) {
     const n = nodesById.get(id); if (!n) return false;
-    n.fullContent.text = txt; return true;
+    const board = editor.context.insertionParent;
+    const b = n.boundsInParent;
+    const third = board.width / 3;
+    const cx = b.x + b.width / 2;
+    const region = (b.x < third && b.x + b.width <= 2 * third) ? "left"
+        : (b.x >= third && b.x + b.width > 2 * third) ? "right"
+        : cx < third ? "left" : cx > 2 * third ? "right" : "center";
+    n.fullContent.text = txt;
+    try {
+        if (constants?.TextAlignment) {
+            n.textAlignment = region === "center" ? constants.TextAlignment.center
+                : region === "right" ? constants.TextAlignment.right
+                : constants.TextAlignment.left;
+        }
+    } catch (_) { /* păstrează alinierea curentă dacă nodul nu suportă textAlignment */ }
+    return true;
 }
 
 // eticheta "Imagine generată cu AI" (dreapta-jos) sau disclaimerul (stânga-jos)
