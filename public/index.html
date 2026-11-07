@@ -11,9 +11,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="preload" as="image" href="demo/hero-persoana.jpg" />
-  <link rel="stylesheet" href="site.css?v=3" />
+  <link rel="stylesheet" href="site.css?v=4" />
   <script>document.documentElement.classList.add("js");</script>
-  <script type="module" src="site.js?v=3"></script>
+  <script type="module" src="site.js?v=4"></script>
 </head>
 <body>
   <a class="skip" href="#continut">Sari la conținut</a>
@@ -111,6 +111,14 @@
                   <button type="button" class="pf-chip" data-axis="accessibility" aria-pressed="false"><b>60</b><span>Accesib.</span></button>
                   <button type="button" class="pf-chip" data-axis="legal" aria-pressed="false"><b>30</b><span>Legal</span></button>
                   <button type="button" class="pf-chip" data-axis="ai_act" aria-pressed="false"><b>60</b><span>AI Act</span></button>
+                </div>
+                <div class="pf-tol">
+                  <div class="pf-tol-head">
+                    <label for="pfMinArea">Toleranță suprafață minimă</label>
+                    <b id="pfMinAreaVal">0.5%</b>
+                  </div>
+                  <input id="pfMinArea" type="range" min="0" max="20" step="0.5" value="0.5" />
+                  <small>Ignoră elementele cu suprafața &lt; <span id="pfMinAreaInline">0.5</span>% din pagină</small>
                 </div>
               </div>
               <p class="pf-status" id="pfStatus" role="status">6 probleme deschise</p>
@@ -564,7 +572,7 @@ legal            <span class="n">85</span>   restul 100
 
         <div class="faq reveal">
           <details name="qa" open><summary>Prin ce diferă de GenStudio?</summary><p>GenStudio e enterprise, cu Workfront și contracte mari. PreFlight e pentru IMM-uri și agenții mici, în Express, de la 0 €. Îl completează, nu îl înlocuiește, și duce clienții spre el pe măsură ce cresc.</p></details>
-          <details name="qa"><summary>Ce faceți când LLM-ul halucinează?</summary><p>Trei protecții: schemă JSON strictă; fiecare problemă trebuie să citeze textul din design sau să aibă o casetă validă în imagine, altfel e eliminată automat în cod; scorul e calculat de cod, nu de LLM.</p></details>
+          <details name="qa"><summary>Ce faceți când LLM-ul halucinează?</summary><p>Trei protecții: schemă JSON strictă; fiecare problemă trebuie să citeze textul din design sau să aă o casetă validă în imagine, altfel e eliminată automat în cod; scorul e calculat de cod, nu de LLM.</p></details>
           <details name="qa"><summary>Cum decideți dacă imaginea e deepfake?</summary><p>Combinăm proveniența (Content Credentials spun dacă e generată cu AI) cu judecata vizuală a modelului: fotorealism, persoane sau locuri care par reale. Persoana fotorealistă din asset-ul A primește „obligatoriu”, iar ilustrația stilizată din asset-ul B primește „recomandat”.</p></details>
           <details name="qa"><summary>Ce se întâmplă dacă imaginea nu are Content Credentials?</summary><p>Absența manifestului nu dovedește că imaginea nu e AI, pentru că metadatele se pot pierde. În acest caz decide doar analiza vizuală, cu severitate redusă la „atenționare”, și îi cerem utilizatorului imaginile sursă, ca să confirme proveniența.</p></details>
           <details name="qa"><summary>Răspunderea juridică?</summary><p>PreFlight e suport decizional, nu consultanță juridică. Arată riscul și temeiul, iar decizia rămâne la om. Jurnalul de audit dovedește diligența, ceea ce e util în fața unei autorități.</p></details>

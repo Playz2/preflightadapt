@@ -85,17 +85,17 @@ function makeAd(label, classes = []) {
 
 // ---------------- simularea: reclama + panoul de 320 px ----------------
 const CARDS = [
-  { id: "contrast", severity: "error", axis: "accessibility", axisLabel: "Accesibilitate", fx: "fx-contrast", hl: "title",
+  { id: "contrast", severity: "error", axis: "accessibility", axisLabel: "Accesibilitate", fx: "fx-contrast", hl: "title", areaPct: 5.5,
     title: "Contrast 1,5:1, minimul pentru text mare e 3:1", why: "Titlul #C9C2B8 e greu de citit pe #F3EDE4.", law: "WCAG 2.2, criteriul 1.4.3" },
-  { id: "claim", severity: "error", axis: "legal", axisLabel: "Legal", fx: "fx-claim", hl: "title",
+  { id: "claim", severity: "error", axis: "legal", axisLabel: "Legal", fx: "fx-claim", hl: "title", areaPct: 5.5,
     title: "„Vindecă oboseala în 7 zile!”", why: "Un supliment nu poate pretinde că vindecă o afecțiune.", law: "Reg. (UE) 1169/2011 art. 7(3)", sugg: "Mai multă energie, zi de zi" },
-  { id: "ai", severity: "error", axis: "ai_act", axisLabel: "AI Act", fx: "fx-ai", hl: "photo",
+  { id: "ai", severity: "error", axis: "ai_act", axisLabel: "AI Act", fx: "fx-ai", hl: "photo", areaPct: 25.2,
     title: "Imagine AI fotorealistă fără etichetă", why: "Content Credentials o marchează ca AI, iar persoana pare reală.", law: "EU AI Act, art. 50(4)" },
-  { id: "sup", severity: "warning", axis: "legal", axisLabel: "Legal", fx: "fx-sup", hl: "sub",
+  { id: "sup", severity: "warning", axis: "legal", axisLabel: "Legal", fx: "fx-sup", hl: "sub", areaPct: 2.2,
     title: "„Cel mai bun supliment din România”", why: "Superlativ nedovedit.", law: "Legea 158/2008", sugg: "Formulă cu magneziu și vitamina B6" },
-  { id: "cta", severity: "warning", axis: "brand", axisLabel: "Brand", fx: "fx-cta", hl: "cta",
+  { id: "cta", severity: "warning", axis: "brand", axisLabel: "Brand", fx: "fx-cta", hl: "cta", areaPct: 3.7,
     title: "CTA #E11D48 în afara paletei", why: "ΔE 48 față de #F97316. Textul trece și el pe #0F172A, contrast 6,4:1.", law: "Ghid de brand" },
-  { id: "price", severity: "warning", axis: "legal", axisLabel: "Legal", hl: "deal", human: true,
+  { id: "price", severity: "warning", axis: "legal", axisLabel: "Legal", hl: "deal", human: true, areaPct: 4.1,
     title: "„-70% doar azi”", why: "Lipsește prețul de referință din ultimele 30 de zile.", law: "Dir. 98/6/CE art. 6a, Legea 363/2007" },
 ];
 // Disclaimerul e a șaptea constatare a motorului, dar în dosar e afișat pe cardul 6.
@@ -122,16 +122,20 @@ function initSimulation() {
   const list = $("#pfList"), statusEl = $("#pfStatus"), fixBtn = $("#pfFixAll"), ring = $("#pfRing");
   const ringValue = $("#pfRingValue"), scoreEl = $("#pfScore");
   const chips = new Map($$(".pf-chip").map((c) => [c.dataset.axis, c]));
+  const tolEl = $("#pfMinArea"), tolVal = $("#pfMinAreaVal"), tolInline = $("#pfMinAreaInline");
 
   const fixed = new Set();
   let price = null, busy = false, filter = null, raf = 0, asking = false;
   let shown = { total: 0, axes: { brand: 0, accessibility: 0, legal: 0, ai_act: 0 } };
 
+  const minAreaPct = () => Number(tolEl?.value ?? 0.5);
+  const inArea = (c) => !c.areaPct || c.areaPct >= minAreaPct();
+  const activeCards = () => CARDS.filter(inArea);
   const isFixed = (id) => fixed.has(id);
-  const currentScore = () => score([...CARDS, DISCLAIMER].map((i) => ({ axis: i.axis, severity: i.severity, fixed: isFixed(i.id) })));
+  const currentScore = () => score([...activeCards(), DISCLAIMER].map((i) => ({ axis: i.axis, severity: i.severity, fixed: isFixed(i.id) })));
   const cardDone = (c) => (c.id === "price" ? isFixed("price") && isFixed("disc") : isFixed(c.id));
-  const openCards = () => CARDS.filter((c) => !cardDone(c)).length;
-  const openAuto = () => AUTO_CARDS.filter((c) => !isFixed(c.id)).length;
+  const openCards = () => activeCards().filter((c) => !cardDone(c)).length;
+  const openAuto = () => AUTO_CARDS.filter((c) => inArea(c) && !isFixed(c.id)).length;
 
   function paintScore(s) {
     scoreEl.textContent = Math.round(s.total);
@@ -190,7 +194,7 @@ function initSimulation() {
       <p class="icard-law">${esc(c.law)}</p>${form}${sub}${priceDone}
     </article>`;
   }
-  const visible = (c) => !filter || AXIS_FOR_CARD(c).includes(filter);
+  const visible = (c) => inArea(c) && (!filter || AXIS_FOR_CARD(c).includes(filter));
 
   function renderList() {
     list.innerHTML = CARDS.map(cardHtml).join("");
@@ -205,7 +209,7 @@ function initSimulation() {
 
   async function fixAll() {
     if (busy) return;
-    const todo = [...AUTO_CARDS, DISCLAIMER].filter((i) => !isFixed(i.id));
+    const todo = [...AUTO_CARDS.filter(inArea), DISCLAIMER].filter((i) => !isFixed(i.id));
     if (!todo.length) return;
     busy = true;
     renderList();
@@ -220,7 +224,7 @@ function initSimulation() {
     renderList();
     animateScore(true);
     const cards = todo.filter((i) => i.id !== "disc").length, disc = todo.some((i) => i.id === "disc");
-    statusEl.textContent = !isFixed("price")
+    statusEl.textContent = !isFixed("price") && inArea(CARDS.find((c) => c.id === "price"))
       ? `${cards === 1 ? "1 problemă reparată" : `${cards} probleme reparate`}${disc ? ", disclaimer adăugat" : ""}. Rămâne prețul de referință, pe care îl știi doar tu.`
       : finalStatus();
     list.scrollTop = 0;
@@ -253,6 +257,7 @@ function initSimulation() {
     if (busy) return;
     fixed.clear();
     price = null; asking = false; filter = null;
+    if (tolEl) { tolEl.value = "0.5"; tolVal.textContent = "0.5%"; tolInline.textContent = "0.5"; }
     chips.forEach((c) => c.setAttribute("aria-pressed", "false"));
     setAd();
     renderList();
@@ -260,6 +265,16 @@ function initSimulation() {
     statusEl.textContent = problems(openCards());
     list.scrollTop = 0;
   }
+
+  tolEl?.addEventListener("input", () => {
+    const v = tolEl.value;
+    if (tolVal) tolVal.textContent = `${v}%`;
+    if (tolInline) tolInline.textContent = v;
+    renderList();
+    animateScore();
+    const n = openCards();
+    statusEl.textContent = n ? problems(n) : finalStatus();
+  });
 
   // evenimente pe listă: cardurile se redesenează, deci delegăm
   list.addEventListener("click", (e) => {
