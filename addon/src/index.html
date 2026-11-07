@@ -5,17 +5,37 @@
         <meta name="description" content="PreFlight: verificare de conformitate înainte de publicarea unei reclame" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>PreFlight</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet" />
         <script type="module" src="add-on-console-override.js"></script>
-        <style>
-            body { margin: 0; padding: 16px; font-family: Inter, system-ui, sans-serif; color: #0f172a; }
-            button { width: 100%; padding: 10px; border: 0; border-radius: 8px; background: #4338ca; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
-            button:disabled { opacity: 0.6; cursor: default; }
-            pre { margin: 12px 0 0; padding: 8px; font-size: 11px; white-space: pre-wrap; word-break: break-word; background: #f1f5f9; border-radius: 8px; }
-            pre:empty { display: none; }
-        </style>
     </head>
     <body>
-        <button id="scan" disabled>Scanează</button>
-        <pre id="output"></pre>
+        <header>
+            <svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true">
+                <rect width="26" height="26" rx="6" fill="#4338CA" />
+                <path d="M5 13 L21 5.5 L15.5 20.5 L12.5 15 Z" fill="#fff" />
+                <circle cx="23" cy="23" r="5.4" fill="#16A34A" stroke="#0F172A" stroke-width="1.4" />
+                <path d="M20.6 22.9 L22.4 24.6 L25.4 21.2" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span class="name">PreFlight</span>
+            <span id="kit" class="kit"></span>
+        </header>
+
+        <div id="ring" class="ring"><div><span id="score">-</span><small>din 100</small></div></div>
+        <div class="chips">
+            <button id="chip-brand" class="chip" data-axis="brand"><b>-</b><span>Brand</span></button>
+            <button id="chip-accessibility" class="chip" data-axis="accessibility"><b>-</b><span>Accesib.</span></button>
+            <button id="chip-legal" class="chip" data-axis="legal"><b>-</b><span>Legal</span></button>
+            <button id="chip-ai_act" class="chip" data-axis="ai_act"><b>-</b><span>AI Act</span></button>
+        </div>
+
+        <div id="status" class="status" role="status"></div>
+        <div id="issues" class="issues"></div>
+
+        <div class="actions">
+            <button id="fixall" class="primary" disabled>Fix all</button>
+            <button id="run" class="secondary" disabled>Rulează PreFlight</button>
+        </div>
+        <p class="disclaimer">Suport decizional, nu consultanță juridică. Decizia finală rămâne la tine.</p>
     </body>
 </html>

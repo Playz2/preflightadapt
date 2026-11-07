@@ -1,0 +1,59 @@
+/* Tokens și componente preluate din public/styles.css, adaptate la panoul de ~320 px */
+:root {
+    --ink: #0F172A; --indigo: #4338CA; --indigo-l: #EEF2FF; --indigo-s: #A5B4FC;
+    --green: #15803D; --green-l: #DCFCE7; --amber: #B45309; --amber-f: #F59E0B; --amber-l: #FEF3C7;
+    --red: #B91C1C; --red-l: #FEE2E2; --slate: #475569; --border: #E2E8F0; --surface: #F8FAFC;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; padding: 0 12px 10px; display: flex; flex-direction: column; overflow: hidden;
+       font: 13px/1.4 Inter, system-ui, sans-serif; color: var(--ink); background: #fff; }
+button { font: inherit; cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+
+header { flex: none; height: 48px; display: flex; align-items: center; gap: 8px; }
+header .name { font: 700 16px Poppins, sans-serif; }
+header .kit { margin-left: auto; color: var(--slate); font-size: 11px; }
+
+.ring { --p: 0; --c: var(--border); flex: none; width: 120px; height: 120px; border-radius: 50%; margin: 2px auto 10px;
+        display: grid; place-items: center; background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--border) 0); }
+.ring > div { width: 96px; height: 96px; border-radius: 50%; background: #fff; display: grid; place-items: center; align-content: center; }
+#score { font: 700 28px Poppins, sans-serif; line-height: 1; }
+.ring small { color: var(--slate); font-size: 11px; }
+
+.chips { flex: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 8px; }
+.chip { border: 0; background: var(--surface); color: var(--ink); border-radius: 8px; text-align: center; padding: 6px 1px; outline-offset: 1px; }
+.chip b { display: block; font: 700 15px Poppins, sans-serif; }
+.chip span { font-size: 10px; color: var(--slate); }
+.chip.ok { background: var(--green-l); color: var(--green); }
+.chip.warn { background: var(--amber-l); color: var(--amber); }
+.chip.bad { background: var(--red-l); color: var(--red); }
+.chip.ok span, .chip.warn span, .chip.bad span { color: inherit; }
+.chip.active { outline: 2px solid var(--indigo); }
+
+.status { flex: none; font-size: 12px; color: var(--slate); margin-bottom: 6px; min-height: 17px; }
+
+.issues { flex: 1; min-height: 0; overflow-y: auto; }
+.empty { color: var(--slate); text-align: center; padding: 16px 8px; }
+.card { --sev: var(--indigo); --bg: var(--indigo-l); border-left: 3px solid var(--sev); background: var(--bg);
+        border-radius: 8px; padding: 8px 9px; margin-bottom: 6px; display: grid; grid-template-columns: minmax(0, 1fr) auto;
+        gap: 6px; align-items: start; animation: in .25s ease; overflow-wrap: anywhere; }
+.card.error { --sev: var(--red); --bg: var(--red-l); }
+.card.warning { --sev: var(--amber); --bg: var(--amber-l); }
+.card.info { --sev: var(--indigo); --bg: var(--indigo-l); }
+.card.fixed { opacity: .5; }
+.card.fixed b { text-decoration: line-through; }
+.card .sev { font-size: 10px; font-weight: 700; letter-spacing: .04em; color: var(--sev); }
+.card .why { color: var(--slate); font-size: 11.5px; }
+.card .law { font-size: 11px; color: var(--sev); margin-top: 2px; }
+.card .sugg { font-size: 11.5px; margin-top: 3px; color: var(--green); font-weight: 600; }
+.mini { border: 1px solid var(--sev); background: #fff; color: var(--sev); border-radius: 6px; padding: 3px 8px; font-weight: 700; font-size: 11.5px; white-space: nowrap; }
+.skeleton { height: 54px; border-radius: 8px; margin-bottom: 6px; background: linear-gradient(90deg, #F1F5F9, #E2E8F0, #F1F5F9);
+            background-size: 200% 100%; animation: sh 1.2s infinite; }
+@keyframes sh { to { background-position: -200% 0; } }
+@keyframes in { from { opacity: 0; transform: translateY(4px); } }
+
+.actions { flex: none; display: grid; gap: 6px; margin-top: 8px; }
+.primary { background: var(--indigo); color: #fff; border: 0; border-radius: 10px; padding: 10px; font-weight: 700; }
+.secondary { background: #fff; color: var(--indigo); border: 1px solid var(--indigo); border-radius: 10px; padding: 8px; font-weight: 600; }
+.disclaimer { flex: none; font-size: 10.5px; color: var(--slate); text-align: center; margin: 6px 0 0; }
