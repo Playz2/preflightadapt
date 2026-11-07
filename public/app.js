@@ -1,4 +1,4 @@
-import { analyze, boxAreaPct, score } from "./engine.js";
+import { analyze, boxAreaPct, checkAiAct, score } from "./engine.js";
 import { applyFixes } from "./fixer.js";
 import { readProvenance, mergeProvenance } from "./provenance.js";
 
@@ -135,14 +135,7 @@ function recomputeIssues() {
 // ---------------- AI Act: decizia finală (cod), pe baza verdictului vizual (AI) + C2PA ----------------
 function aiActIssues(d) {
   const labeled = S.blocks.some((b) => /generat(ă|a)?\s+cu\s+a[il1|](?![\p{L}\p{N}])/iu.test(b.text));
-  if (S.labelApplied || labeled || !d) return [];
-  if (d.disclosureRequired) return [{ id: "ai-label", axis: "ai_act", severity: S.provenance.aiGenerated ? "error" : "warning",
-    title: "Imagine AI fotorealistă fără etichetă", explanation: d.reasoning,
-    legalBasis: "EU AI Act, art. 50(4)", fix: { kind: "label" } }];
-  if (S.provenance.aiGenerated) return [{ id: "ai-label", axis: "ai_act", severity: "info",
-    title: "Conținut AI: etichetă recomandată, nu obligatorie", explanation: d.reasoning,
-    legalBasis: "Bună practică (Codul de conduită UE)", fix: { kind: "label" } }];
-  return [];
+  return checkAiAct(d, S.provenance, S.labelApplied || labeled);
 }
 
 // ---------------- fluxul principal ----------------

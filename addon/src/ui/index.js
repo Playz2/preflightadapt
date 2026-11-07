@@ -1,5 +1,5 @@
 import addOnUISdk, { RuntimeType } from "https://new.express.adobe.com/static/add-on-sdk/sdk.js";
-import { boxAreaPct, checkContrast, checkPalette, checkDisclaimer, score } from "./engine.js";
+import { boxAreaPct, checkContrast, checkPalette, checkDisclaimer, checkAiAct, score } from "./engine.js";
 import { render, initChips, initCards } from "./render.js";
 import KIT from "./brandkit.json";
 import "./styles.css";
@@ -69,14 +69,8 @@ async function toJpegBase64(blob, maxSide = 1536) {
 }
 
 function aiActIssues(d) {
-    if (!d || scan.texts.some((t) => /generat(ă|a)?\s+cu\s+ai/i.test(t.text))) return []; // eticheta există deja
-    if (d.disclosureRequired) return [{ axis: "ai_act", severity: provenance.aiGenerated ? "error" : "warning",
-        title: "Imagine AI fotorealistă fără etichetă", explanation: d.reasoning,
-        legalBasis: "EU AI Act, art. 50(4)", fix: { kind: "label" } }];
-    if (provenance.aiGenerated) return [{ axis: "ai_act", severity: "info",
-        title: "Conținut AI: etichetă recomandată, nu obligatorie", explanation: d.reasoning,
-        legalBasis: "Bună practică (Codul de conduită UE)", fix: { kind: "label" } }];
-    return [];
+    const labeled = scan.texts.some((t) => /generat(ă|a)?\s+cu\s+a[il1|](?![\p{L}\p{N}])/iu.test(t.text));
+    return checkAiAct(d, provenance, labeled);
 }
 
 async function callAudit(png) {
