@@ -23,12 +23,12 @@ async function renderPng() {
     return r.blob;
 }
 
-async function toJpegBase64(blob, maxSide = 1024) {
+async function toJpegBase64(blob, maxSide = 1536) {
     const bmp = await createImageBitmap(blob);
     const k = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
     const cv = new OffscreenCanvas(Math.round(bmp.width * k), Math.round(bmp.height * k));
     cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
-    const buf = new Uint8Array(await (await cv.convertToBlob({ type: "image/jpeg", quality: 0.85 })).arrayBuffer());
+    const buf = new Uint8Array(await (await cv.convertToBlob({ type: "image/jpeg", quality: 0.92 })).arrayBuffer());
     let s = "";
     for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode(...buf.subarray(i, i + 0x8000));
     return btoa(s);

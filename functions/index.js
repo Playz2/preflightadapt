@@ -72,7 +72,12 @@ const SYSTEM_PROMPT = `Ești PreFlight, auditor de conformitate pentru reclame p
 Primești: imaginea reclamei, lista blocurilor de text (id + text), brand kit-ul și proveniența (C2PA).
 
 SARCINI
-1. LEGAL (axis "legal"), analizând DOAR textele primite:
+1. LEGAL (axis "legal"), analizând textele primite și ce se vede în IMAGINE:
+   - recomandare din partea unui medic sau profesionist din sănătate (în text SAU vizibilă în imagine: halat, „Dr.”, „MD”, ecuson, stetoscop asociat cu produsul)
+     -> "error", legalBasis "Reg. (CE) 1924/2006 art. 12(c)"
+   - text din IMAGINE (etichete de produs, ecusoane, inscripții) care conține claim-uri problematice -> le tratezi ca pe textele din design
+   - urgență artificială („doar azi”, „ultimele bucăți”) fără termen verificabil -> "warning", "Legea 363/2007";
+     rescrierea păstrează restul textului și scoate doar urgența. Dacă același text are și reducere, și urgență, raportezi DOUĂ probleme separate.
    - proprietăți de prevenire/tratare/vindecare a bolilor atribuite unui aliment sau supliment
      -> severity "error", legalBasis "Reg. (UE) 1169/2011 art. 7(3)"
    - mențiuni de sănătate neautorizate ("întărește imunitatea", "detoxifiază") -> "warning", "Reg. (CE) 1924/2006"
@@ -87,11 +92,13 @@ SARCINI
    reasoning = o propoziție în română
 
 REGULI STRICTE
-- "quote" e copiat EXACT dintr-un text primit; "blockId" e id-ul acelui bloc. Nu inventa texte.
+- "quote" e copiat EXACT dintr-un text primit ("blockId" = id-ul acelui bloc) sau dintr-o inscripție vizibilă în imagine. Pentru o problemă pur vizuală, fără text: quote = "". Nu inventa texte.
+- "region": pentru probleme vizibile în imagine, caseta strânsă în jurul elementului concret (ecuson, halat, stetoscop, inscripție), nu a întregii persoane, în coordonate normalizate 0-1000, [ymin, xmin, ymax, xmax]. Altfel null. Nu raporta o problemă din imagine fără region.
+- "confidence": "high", "medium" sau "low", cât de sigur ești că problema există.
 - NU raporta contrast, culori, fonturi, disclaimere sau etichete AI: le verifică alt modul.
 - Dacă nu ești sigur, folosește "warning", nu "error". Fără probleme -> issues: [].
 - "explanation": maxim 20 de cuvinte, în română, pentru un marketer.
-- "suggestedText": rescriere în română, în tonul brandului, fără problema semnalată, cel mult la fel de lungă ca originalul.
+- "suggestions": 2-3 rescrieri alternative ale ÎNTREGULUI bloc de text, în română, în tonul brandului, fără problema semnalată, fiecare cel mult la fel de lungă ca originalul. "suggestedText" = prima dintre ele. Dacă needsHumanInput e true sau problema nu e într-un bloc primit: suggestions = [], suggestedText = null.
 - toneScore: 0-100.`;
 
 const T = Type;
@@ -108,7 +115,10 @@ const SCHEMA = {
       legalBasis: { type: T.STRING },
       suggestedText: { type: T.STRING, nullable: true },
       needsHumanInput: { type: T.BOOLEAN },
-    }, required: ["axis", "severity", "quote", "title", "explanation"] } },
+      suggestions: { type: T.ARRAY, items: { type: T.STRING } },
+      region: { type: T.ARRAY, items: { type: T.INTEGER }, nullable: true },
+      confidence: { type: T.STRING, enum: ["high", "medium", "low"] },
+    }, required: ["axis", "severity", "quote", "title", "explanation", "suggestions", "region", "confidence"] } },
     aiDisclosure: { type: T.OBJECT, properties: {
       photorealistic: { type: T.BOOLEAN }, depictsRealPersonLike: { type: T.BOOLEAN },
       disclosureRequired: { type: T.BOOLEAN }, reasoning: { type: T.STRING },
@@ -146,10 +156,38 @@ async function generateWithRetry(ai, params) {
   throw lastError;
 }
 
+const validRegion = (r) => Array.isArray(r) && r.length === 4 && r.every((v) => Number.isFinite(v) && v >= 0 && v <= 1000)
+  && r[0] < r[2] && r[1] < r[3];
+
+// anti-halucinație: păstrăm doar problemele cu citat găsit într-un bloc sau cu o casetă validă în imagine
+function cleanIssues(issues, blocks) {
+  const out = [];
+  for (const i of issues || []) {
+    const q = norm(i.quote);
+    const b = q ? blocks.find((x) => { const t = norm(x.text); return t && (t.includes(q) || q.includes(t)); }) : null;
+    const region = validRegion(i.region) ? i.region : null;
+    if (!b && !region) continue;
+    const confidence = ["high", "medium", "low"].includes(i.confidence) ? i.confidence : "medium";
+    // o problemă incertă nu poate costa cât o eroare sigură
+    const severity = confidence === "low" && i.severity === "error" ? "warning" : i.severity;
+    // rescrierile se aplică doar pe un bloc existent și nu au voie să fie mai lungi decât el
+    let suggestions = [];
+    if (b && !i.needsHumanInput) {
+      const all = [...new Set([...(i.suggestions || []), i.suggestedText].map((s) => (s || "").trim()).filter(Boolean))];
+      const fit = all.filter((s) => s.length <= b.text.length);
+      suggestions = fit.length ? fit : all.sort((x, y) => x.length - y.length).slice(0, 1);
+    }
+    out.push({ ...i, blockId: b ? b.id : null, region, confidence, severity, suggestions, suggestedText: suggestions[0] || null,
+      needsHumanInput: !!(b && i.needsHumanInput) }); // pe o problemă doar din imagine nu are ce completa omul
+  }
+  return out;
+}
+
 exports.audit = onRequest({ cors: true, secrets: [GEMINI_API_KEY] }, handler(async (body) => {
   const { imageBase64, blocks = [], brandKit = {}, provenance = {} } = body;
   if (!imageBase64) throw new Error("imageBase64 lipsă");
-  const key = "audit-" + sha(imageBase64 + JSON.stringify(provenance) + (brandKit.name || ""));
+  // la schimbarea prompt-ului sau a schemei crește versiunea, ca să nu primim răspunsuri vechi din cache
+  const key = "audit-v4-" + sha(imageBase64 + JSON.stringify(provenance) + (brandKit.name || ""));
   return cached(key, async () => {
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY.value() });
     const resp = await generateWithRetry(ai, {
@@ -158,15 +196,12 @@ exports.audit = onRequest({ cors: true, secrets: [GEMINI_API_KEY] }, handler(asy
         { text: JSON.stringify({ blocks, brandKit, provenance }) },
       ] }],
       config: { systemInstruction: SYSTEM_PROMPT, responseMimeType: "application/json",
-                responseSchema: SCHEMA, temperature: 0.2 },
+                responseSchema: SCHEMA, temperature: 0.2,
+                // fără limită, modelul „gândește” până la 40 s, peste limita de timp a funcției
+                thinkingConfig: { thinkingLevel: "LOW" } },
     });
     const out = JSON.parse(resp.text);
-    // anti-halucinație: păstrăm doar problemele al căror citat EXISTĂ în imagine
-    out.issues = (out.issues || []).filter((i) => {
-      const b = blocks.find((x) => norm(x.text).includes(norm(i.quote)) || norm(i.quote).includes(norm(x.text)));
-      if (b) i.blockId = b.id;
-      return !!b;
-    });
+    out.issues = cleanIssues(out.issues, blocks);
     return out;
   });
 }));

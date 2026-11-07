@@ -18,12 +18,12 @@ async function fileToCanvas(file) {
   c.getContext("2d", { willReadFrequently: true }).drawImage(bmp, 0, 0);
   return c;
 }
-async function toJpegBase64(canvas, maxSide = 1600) {
+async function toJpegBase64(canvas, maxSide = 1536) {
   const k = Math.min(1, maxSide / Math.max(canvas.width, canvas.height));
   const c = document.createElement("canvas");
   c.width = Math.round(canvas.width * k); c.height = Math.round(canvas.height * k);
   c.getContext("2d").drawImage(canvas, 0, 0, c.width, c.height);
-  const blob = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.9));
+  const blob = await new Promise((r) => c.toBlob(r, "image/jpeg", 0.92));
   const buf = new Uint8Array(await blob.arrayBuffer());
   let s = "";
   for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode(...buf.subarray(i, i + 0x8000));
