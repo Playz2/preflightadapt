@@ -46,9 +46,9 @@
         <a href="#vitaboost" data-spy="vitaboost">Cazul VitaBoost</a>
         <a href="#arhitectura" data-spy="arhitectura">Arhitectură</a>
         <a href="#lege-roi" data-spy="lege-roi">Lege &amp; ROI</a>
-        <a href="#juriu" data-spy="juriu">Întrebări Juriu</a>
+        <a href="#juriu" data-spy="juriu">Întrebări frecvente</a>
       </nav>
-      <a class="btn btn-primary btn-sm magnetic" href="#launchpad"><span class="wide-only">Deschide în</span>Adobe Express</a>
+      <button type="button" class="btn btn-primary btn-sm magnetic" data-open-tool>Deschide PreFlight</button>
     </div>
     <div class="route" aria-hidden="true">
       <div class="route-fill" id="routeFill"></div>
@@ -68,7 +68,7 @@
           <p>Verificarea de conformitate înainte de publicare, direct în Adobe Express. Brand, Accesibilitate WCAG, Claim-uri legale și EU AI Act Art. 50 + Content Credentials — verificate și reparate cu un singur click.</p>
           <div class="hero-cta">
             <a class="btn btn-primary magnetic" href="#simulare">Încearcă Fix all</a>
-            <a class="btn btn-ghost-dark" href="#launchpad">Deschide în Adobe Express</a>
+            <button type="button" class="btn btn-ghost-dark" data-open-tool>Deschide PreFlight</button>
           </div>
         </div>
 
@@ -175,11 +175,32 @@
               <li><b>Apasă „Rulează PreFlight”.</b> Rezultatele deterministe apar imediat. Auditul AI vine după ele, de obicei în sub 20 de secunde la prima rulare și aproape instant din cache.</li>
               <li><b>Apasă „Fix all”.</b> Modificările se aplică direct în document și se pot anula cu Undo.</li>
             </ol>
-            <p class="note note-amber"><b>Add-on-ul vede doar elemente native.</b> O postare PNG lipită în Express e o singură imagine, fără texte de citit sau de reparat. Pentru ea folosește sandboxul de mai jos, care citește pixelii prin OCR și Content Credentials prin WASM. În add-on, Content Credentials nu se citesc încă, deci imaginea AI rămâne atenționare, nu eroare.</p>
+            <p class="note note-amber"><b>Add-on-ul vede doar elemente native.</b> O postare PNG lipită în Express e o singură imagine, fără texte de citit sau de reparat. Pentru ea folosește popup-ul PreFlight, care citește pixelii prin OCR și Content Credentials prin WASM. În add-on, Content Credentials nu se citesc încă, deci imaginea AI rămâne atenționare, nu eroare.</p>
           </div>
         </div>
 
         <h3 class="sub-title reveal" id="imagini">Imaginile de test</h3>
+        <div class="medical-compare reveal">
+          <div class="medical-compare-head">
+            <h4>Aceeași categorie de produs. Un risc juridic în plus.</h4>
+            <p>Compară cele două imagini AI în contextul unei reclame pentru suplimente VitaBoost. Scorurile se calculează la testare, nu sunt valori prestabilite.</p>
+          </div>
+          <div class="medical-pair">
+            <article>
+              <img src="demo/foto_persoana.jpg" alt="Persoană în haine obișnuite, ținând un flacon de supliment." loading="lazy" width="1024" height="1024" />
+              <h4>Fără medic</h4>
+              <p>Nu prezintă o recomandare medicală vizuală evidentă. Claim-urile reclamei și divulgarea originii AI trebuie verificate separat.</p>
+              <button type="button" class="btn btn-primary btn-sm" data-test="person">Testează imaginea fără medic</button>
+            </article>
+            <article>
+              <img src="demo/foto_medic.jpg" alt="Persoană cu halat, stetoscop și ecuson de medic, prezentând un flacon." loading="lazy" width="1024" height="1024" />
+              <h4>Cu medic</h4>
+              <p>Halatul, stetoscopul și ecusonul, împreună cu prezentarea produsului, pot sugera o recomandare de la medic. Acesta este riscul juridic suplimentar pe care îl verifică auditul.</p>
+              <button type="button" class="btn btn-primary btn-sm" data-test="doctor">Testează imaginea cu medic</button>
+            </article>
+          </div>
+          <p class="medical-basis"><b>Temei: Reg. (CE) 1924/2006, art. 12(c).</b> Sunt interzise mențiunile de sănătate care fac trimitere la recomandări ale unor medici sau profesioniști din sănătate. Un disclaimer sau eticheta „DEEPFAKE” nu înlătură acest risc. Dacă se confirmă, omul schimbă imaginea; nu există reparare automată. <a href="https://eur-lex.europa.eu/eli/reg/2006/1924/oj" target="_blank" rel="noopener">Textul regulamentului</a>.</p>
+        </div>
         <p class="sub-lead reveal">Descarci, sau tragi miniatura pe desktop, în sandbox ori în Express. Dacă Express nu preia imaginea trasă, folosește butonul de descărcare.</p>
         <div class="passes">
           <article class="pass pass-wide reveal">
@@ -234,21 +255,6 @@
           </article>
         </div>
 
-        <div class="sandbox reveal" id="sandbox">
-          <div class="sandbox-head">
-            <div>
-              <h3 class="sub-title">Sandbox web: planul B, integrat</h3>
-              <p class="sub-lead">Motorul real, fără Express: OCR, Content Credentials, contrast, paletă, audit AI și Fix all pe canvas.</p>
-            </div>
-            <button type="button" class="btn btn-outline btn-sm" data-open-tool>Deschide PreFlight</button>
-          </div>
-          <div class="tabs" role="tablist" aria-label="Mod de demo" data-tabs>
-            <button type="button" role="tab" id="tab-live" aria-controls="panel-live" aria-selected="true">Sandbox live</button>
-            <button type="button" role="tab" id="tab-video" aria-controls="panel-video" aria-selected="false" tabindex="-1">Video de backup (70 s)</button>
-          </div>
-          <div role="tabpanel" id="panel-live" aria-labelledby="tab-live">
-            <button type="button" class="btn btn-primary" data-open-tool>Încarcă o reclamă în PreFlight</button>
-          </div>
           <dialog id="toolDialog" class="tool-dialog" aria-labelledby="toolDialogTitle">
             <div class="tool-dialog-head">
               <h2 id="toolDialogTitle">PreFlight</h2>
@@ -257,16 +263,6 @@
             <p class="tool-msg" id="toolMsg" role="status" hidden></p>
             <iframe id="toolFrame" class="tool-frame" src="app.html" title="Aplicația PreFlight: încarcă o reclamă și rulează verificarea" loading="lazy"></iframe>
           </dialog>
-          <div role="tabpanel" id="panel-video" aria-labelledby="tab-video" hidden>
-            <div class="video-box" id="videoBox">
-              <div class="video-empty" id="videoEmpty">
-                <h4>Înregistrarea de 70 de secunde nu e încărcată încă.</h4>
-                <p>Până atunci, simularea din pagină funcționează și fără backend.</p>
-                <a class="btn btn-primary btn-sm" href="#simulare">Mergi la simulare</a>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -564,19 +560,7 @@ legal            <span class="n">85</span>   restul 100
     <!-- ==================== Juriu ==================== -->
     <section class="sec sec-surface" id="juriu" aria-labelledby="jury-title" data-section>
       <div class="wrap">
-        <header class="sec-head reveal">
-          <h2 id="jury-title">Criteriile juriului și întrebările grele.</h2>
-          <p>Țintele sunt autoevaluări din dosarul proiectului, nu note acordate. Răspunsurile sunt cele pe care le dăm și pe scenă.</p>
-        </header>
-        <div class="criteria">
-          <article class="crit reveal"><h3>Problem solving <small>25%</small></h3><p class="crit-n">22<small>/25</small></p><div class="meter" style="--v:.88"><span></span></div><p>Obligație legală activă, claim-uri interzise, accesibilitate. Exemplu concret: o reclamă de supliment.</p></article>
-          <article class="crit reveal"><h3>AI-driven innovation <small>25%</small></h3><p class="crit-n">21<small>/25</small></p><div class="meter" style="--v:.84"><span></span></div><p>LLM vision clasifică riscul de deepfake, detectează claim-uri și propune rescrieri în tonul brandului.</p></article>
-          <article class="crit reveal"><h3>Third-party integrations <small>15%</small></h3><p class="crit-n">13<small>/15</small></p><div class="meter" style="--v:.8667"><span></span></div><p>Adobe Express Add-on SDK și Document Sandbox, C2PA, Gemini API, Cloud Vision, Firebase.</p></article>
-          <article class="crit reveal"><h3>Technical excellence <small>25%</small></h3><p class="crit-n">20<small>/25</small></p><div class="meter" style="--v:.8"><span></span></div><p>Cod determinist pentru ce e măsurabil, AI doar pentru judecată. JSON cu schemă strictă, secrete pe server.</p></article>
-          <article class="crit reveal"><h3>Product experience &amp; demo <small>10%</small></h3><p class="crit-n">9<small>/10</small></p><div class="meter" style="--v:.9"><span></span></div><p>Fix live în Express: scorul urcă de la 54 la 96 în fața juriului.</p></article>
-          <article class="crit reveal"><h3>Bonus cost vs. value <small>+10</small></h3><p class="crit-n">8<small>/10</small></p><div class="meter" style="--v:.8"><span></span></div><p>~0,01–0,02 € per verificare, față de ~8 € pentru o verificare manuală de 20 de minute.</p></article>
-        </div>
-
+        <header class="sec-head reveal"><h2 id="jury-title">Întrebări frecvente</h2></header>
         <div class="faq reveal">
           <details name="qa" open><summary>Prin ce diferă de GenStudio?</summary><p>GenStudio e enterprise, cu Workfront și contracte mari. PreFlight e pentru IMM-uri și agenții mici, în Express, de la 0 €. Îl completează, nu îl înlocuiește, și duce clienții spre el pe măsură ce cresc.</p></details>
           <details name="qa"><summary>Ce faceți când LLM-ul halucinează?</summary><p>Trei protecții: schemă JSON strictă; fiecare problemă trebuie să citeze textul din design sau să aă o casetă validă în imagine, altfel e eliminată automat în cod; scorul e calculat de cod, nu de LLM.</p></details>
@@ -595,7 +579,7 @@ legal            <span class="n">85</span>   restul 100
     <div class="wrap">
       <svg width="48" height="48" aria-hidden="true"><use href="#logo" /></svg>
       <p class="ftr-line">Verifică înainte să decolezi.</p>
-      <a class="btn btn-primary magnetic" href="#launchpad">Deschide în Adobe Express</a>
+      <button type="button" class="btn btn-primary magnetic" data-open-tool>Deschide PreFlight</button>
       <p class="ftr-legal">Hackathon Adobe · 7 noiembrie 2026 · Informații juridice verificate la această dată. PreFlight este un instrument de suport decizional și nu constituie consultanță juridică.</p>
     </div>
   </footer>

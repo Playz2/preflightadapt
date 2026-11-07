@@ -11,7 +11,7 @@ const $ = (s) => document.querySelector(s);
 const S = { kit: null, original: null, base: null, current: null, blocks: [], issues: [],
             llmIssues: [], aiDisclosure: null, cached: false, minAreaPct: 0.5,
             provenance: { hasCredentials: false, aiGenerated: false, files: [] }, sources: [],
-            scoreBefore: null, view: "after", busy: false, labelApplied: false };
+            scoreBefore: null, view: "after", busy: false, labelApplied: false, rerunRequested: false };
 
 // ---------------- utilitare ----------------
 async function fileToCanvas(file) {
@@ -135,7 +135,7 @@ function recomputeIssues() {
 
 // ---------------- AI Act: decizia finală (cod), pe baza verdictului vizual (AI) + C2PA ----------------
 function aiActIssues(d) {
-  const labeled = S.blocks.some((b) => /generat(ă|a)?\s+cu\s+a[il1|](?![\p{L}\p{N}])/iu.test(b.text));
+  const labeled = S.blocks.some((b) => /(?:generat(ă|a)?\s+cu\s+a[il1|]|\bdeepfake)(?![\p{L}\p{N}])/iu.test(b.text));
   return checkAiAct(d, S.provenance, S.labelApplied || labeled);
 }
 
@@ -170,17 +170,25 @@ async function runPreflight() {
     setButtonUnavailable($("#new-image"), false);
     const n = S.issues.filter((i) => i.fix && !i.fixed && i.fix.kind !== "humanPrice").length;
     setButtonUnavailable($("#fixall"), !n, "Nu există probleme de reparat automat");
+    if (S.rerunRequested) {
+      S.rerunRequested = false;
+      await runPreflight();
+    }
   }
 }
 
 async function fix(list) {
   if (S.busy) return;
   await Promise.all([400, 500, 600, 700].map((w) => document.fonts?.load(w + " 24px Poppins")).concat(document.fonts?.ready));
-  for (const i of list) {
-    i.fixed = true;
-    if (i.fix?.kind === "label") S.labelApplied = true;
+  const updated = S.issues.map((i) => list.includes(i) ? { ...i, fixed: true } : i);
+  try {
+    S.current = applyFixes(S.base, S.blocks, updated, S.kit);
+  } catch (e) {
+    $("#status").textContent = e.message;
+    return;
   }
-  S.current = applyFixes(S.base, S.blocks, S.issues, S.kit);
+  S.issues = updated;
+  if (list.some((i) => i.fix?.kind === "label")) S.labelApplied = true;
   S.view = "after";
   render({ score: score(S.issues) });          // feedback instant
   S.base = S.current;                           // re-verificare REALĂ pe imaginea reparată
@@ -228,9 +236,14 @@ async function loadAd(file) {
   }
 }
 async function addSources(files) {
-  for (const f of files) S.sources.push(await readProvenance(f));
+  if (!files.length || !S.original) return;
+  const original = S.original;
+  const sources = await Promise.all(files.map(readProvenance));
+  if (S.original !== original) return;
+  S.sources.push(...sources);
   S.provenance = mergeProvenance(S.sources);
-  render({});
+  if (S.busy) S.rerunRequested = true;
+  else await runPreflight();
 }
 
 // ---------------- randare ----------------

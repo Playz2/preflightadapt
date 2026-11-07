@@ -107,10 +107,10 @@ export function checkAiAct(disclosure, provenance = {}, labeled = false) {
     id: "ai-label", axis: "ai_act", severity: aiGenerated ? "error" : "warning",
     title: aiGenerated ? "Posibil deepfake fără etichetă AI" : "Posibil deepfake: verifică proveniența",
     explanation: (aiGenerated
-      ? "Proveniența indică AI, iar analiza vizuală indică un conținut fotorealist care poate fi confundat cu ceva real. Adaugă eticheta vizibilă «Imagine generată cu AI»."
+      ? "Proveniența indică AI, iar analiza vizuală indică un conținut fotorealist care poate fi confundat cu ceva real. Adaugă eticheta vizibilă «DEEPFAKE»."
       : "Analiza vizuală indică un posibil deepfake, dar proveniența AI nu este confirmată. Verifică sursa; dacă imaginea este generată sau manipulată cu AI, adaugă eticheta vizibilă.")
       + " Art. 50(4) se aplică din 2 august 2026; termenul de 2 decembrie privește doar marcarea tehnică a furnizorilor conform art. 50(2).",
-    legalBasis: "EU AI Act, art. 3(60) și art. 50(4)", fix: { kind: "label" },
+    legalBasis: "EU AI Act, art. 3(60) și art. 50(4)", fix: { kind: "label", text: "DEEPFAKE" },
   }];
   if (aiGenerated) return [{
     id: "ai-label", axis: "ai_act", severity: "info",

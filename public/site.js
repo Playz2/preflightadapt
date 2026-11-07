@@ -5,7 +5,6 @@ import { setButtonUnavailable } from "./button-state.js";
 
 // ---------------- configurare ușor de editat ----------------
 const ADOBE_EXPRESS_DEMO_URL = "https://new.express.adobe.com/";
-const BACKUP_VIDEO_URL = "demo/backup-70s.mp4";
 const URL_KEY = "preflight.expressUrl";
 
 const ASSETS = {
@@ -13,6 +12,8 @@ const ASSETS = {
        source: { url: "demo/foto_persoana.jpg", name: "foto_persoana.jpg", type: "image/jpeg" } },
   b: { url: "demo/asset-b-brutarie.png", name: "asset-b-brutarie.png", type: "image/png" },
   c: { url: "demo/asset-c-control.png", name: "asset-c-control.png", type: "image/png" },
+  person: { url: "demo/foto_persoana.jpg", name: "foto_persoana.jpg", type: "image/jpeg" },
+  doctor: { url: "demo/foto_medic.jpg", name: "foto_medic.jpg", type: "image/jpeg" },
 };
 
 // ---------------- utilitare ----------------
@@ -521,7 +522,6 @@ async function runAsset(key) {
   const { signal } = controller;
   setTestButtons(true);
   try {
-    selectTab($("#tab-live"));
     openTool();
     toolMessage("Încarc imaginea în sandbox…");
     const doc = await toolDoc(signal);
@@ -539,11 +539,8 @@ async function runAsset(key) {
     if (source) {
       // postarea exportată nu mai are manifestul: îl citim din imaginea Firefly originală
       toolMessage("Adaug imaginea Firefly originală, pentru Content Credentials…");
-      setFiles(doc, "#srcfile", [source]);
-      await waitForProvenance(doc, signal);
-      signal.throwIfAborted();
       const second = waitForRun(doc, signal);
-      doc.querySelector("#run").click();
+      setFiles(doc, "#srcfile", [source]);
       await second;
       signal.throwIfAborted();
     }
@@ -622,21 +619,6 @@ function initSandbox() {
   }
 }
 
-let videoChecked = false;
-async function checkVideo() {
-  if (videoChecked) return;
-  videoChecked = true;
-  try {
-    const r = await fetch(BACKUP_VIDEO_URL, { method: "HEAD", cache: "no-store" });
-    if (!r.ok || !(r.headers.get("content-type") || "").startsWith("video/")) return;
-    const v = Object.assign(document.createElement("video"), { src: BACKUP_VIDEO_URL, controls: true, preload: "metadata" });
-    v.setAttribute("aria-label", "Înregistrarea demo-ului PreFlight, 70 de secunde");
-    $("#videoEmpty").hidden = true;
-    $("#videoBox").append(v);
-  } catch { /* rămâne starea goală, care trimite la simulare */ }
-}
-
-// ---------------- file ----------------
 function selectTab(tab) {
   const tabs = $$('[role="tab"]', tab.parentElement);
   for (const t of tabs) {
@@ -645,7 +627,6 @@ function selectTab(tab) {
     t.tabIndex = on ? 0 : -1;
     document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
   }
-  if (tab.id === "tab-video") checkVideo();
 }
 function initTabs() {
   for (const list of $$("[data-tabs]")) {

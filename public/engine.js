@@ -99,7 +99,7 @@ export function analyze(ctx, blocks, kit, minAreaPct = 0) {
   for (const b of blocks) {
     if (b.fontPx * scale < 18) continue; // ignoră inscripțiile mici din fotografii (ecusoane, ambalaje)
     if (discPrefix && norm(b.text).includes(discPrefix)) continue;
-    if (/generat(ă|a)?\s+cu\s+a[il1|](?![\p{L}\p{N}])/iu.test(b.text)) continue;
+    if (/(?:generat(ă|a)?\s+cu\s+a[il1|]|\bdeepfake)(?![\p{L}\p{N}])/iu.test(b.text)) continue;
     const s = splitTextAndBg(ctx, b.bbox);
     if (!s) continue;
     b.textColor = toHex(s.text); b.bgColor = toHex(s.bg);
@@ -154,10 +154,10 @@ export function checkAiAct(disclosure, provenance = {}, labeled = false) {
     id: "ai-label", axis: "ai_act", severity: aiGenerated ? "error" : "warning",
     title: aiGenerated ? "Posibil deepfake fără etichetă AI" : "Posibil deepfake: verifică proveniența",
     explanation: (aiGenerated
-      ? "Proveniența indică AI, iar analiza vizuală indică un conținut fotorealist care poate fi confundat cu ceva real. Adaugă eticheta vizibilă «Imagine generată cu AI»."
+      ? "Proveniența indică AI, iar analiza vizuală indică un conținut fotorealist care poate fi confundat cu ceva real. Adaugă eticheta vizibilă «DEEPFAKE»."
       : "Analiza vizuală indică un posibil deepfake, dar proveniența AI nu este confirmată. Verifică sursa; dacă imaginea este generată sau manipulată cu AI, adaugă eticheta vizibilă.")
       + " Art. 50(4) se aplică din 2 august 2026; termenul de 2 decembrie privește doar marcarea tehnică a furnizorilor conform art. 50(2).",
-    legalBasis: "EU AI Act, art. 3(60) și art. 50(4)", fix: { kind: "label" },
+    legalBasis: "EU AI Act, art. 3(60) și art. 50(4)", fix: { kind: "label", text: "DEEPFAKE" },
   }];
   if (aiGenerated) return [{
     id: "ai-label", axis: "ai_act", severity: "info",
@@ -167,6 +167,32 @@ export function checkAiAct(disclosure, provenance = {}, labeled = false) {
     fix: { kind: "label" },
   }];
   return [];
+}
+
+// Încadrează textul fără a extinde caseta peste alte elemente.
+export function fitTextInBox(ctx, text, { width, height, fontSize, minFontSize = 10, weight = 500 }) {
+  if (!(width > 0 && height > 0 && fontSize > 0)) return null;
+  for (let size = Math.max(1, fontSize); size >= minFontSize; size -= 0.5) {
+    ctx.font = `${weight} ${size}px Poppins, sans-serif`;
+    const lines = [];
+    let line = "";
+    for (const word of String(text).split(/\s+/).filter(Boolean)) {
+      if (ctx.measureText(word).width > width) { line = null; break; }
+      const candidate = line ? `${line} ${word}` : word;
+      if (line && ctx.measureText(candidate).width > width) { lines.push(line); line = word; }
+      else line = candidate;
+    }
+    if (line === null) continue;
+    if (line) lines.push(line);
+    if (!lines.length) return null;
+    const metrics = lines.map((value) => ctx.measureText(value));
+    const ascent = Math.max(...metrics.map((m) => m.actualBoundingBoxAscent ?? size * 0.8));
+    const descent = Math.max(...metrics.map((m) => m.actualBoundingBoxDescent ?? size * 0.2));
+    const lineHeight = Math.max(size * 1.2, ascent + descent);
+    const usedHeight = ascent + descent + (lines.length - 1) * lineHeight;
+    if (usedHeight <= height) return { lines, size, ascent, descent, lineHeight, height: usedHeight };
+  }
+  return null;
 }
 
 // ---------- scor ----------

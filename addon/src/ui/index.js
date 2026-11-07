@@ -69,7 +69,7 @@ async function toJpegBase64(blob, maxSide = 1536) {
 }
 
 function aiActIssues(d) {
-    const labeled = scan.texts.some((t) => /generat(ă|a)?\s+cu\s+a[il1|](?![\p{L}\p{N}])/iu.test(t.text));
+    const labeled = scan.texts.some((t) => /(?:generat(ă|a)?\s+cu\s+a[il1|]|\bdeepfake)(?![\p{L}\p{N}])/iu.test(t.text));
     return checkAiAct(d, provenance, labeled);
 }
 
@@ -176,7 +176,7 @@ async function applyFix(i) {
         for (const t of f.textFixes) results.push(await sandbox.setTextColor(t.nodeId, t.hex));
     }
     if (f.kind === "disclaimer") await sandbox.addLabel(KIT.requiredDisclaimer, { corner: "bl", size: 14, color: "#334155", bg: null });
-    if (f.kind === "label") await sandbox.addLabel("Imagine generată cu AI", { corner: "br", size: 22 });
+    if (f.kind === "label") await sandbox.addLabel(f.text || "Imagine generată cu AI", { corner: "br", size: 22 });
     if (results.includes(false)) throw new Error("elementul nu mai există în document.");
 }
 

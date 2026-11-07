@@ -24,7 +24,8 @@ for (const file of ['public/engine.js', 'addon/src/ui/engine.js']) {
       assert.equal(issues.length, severity ? 1 : 0);
       assert.equal(issues[0]?.severity ?? null, severity);
       assert.equal(score(issues).axes.ai_act, axisScore);
-      if (severity) assert.deepEqual(issues[0].fix, { kind: 'label' });
+      if (severity) assert.deepEqual(issues[0].fix, severity === 'info'
+        ? { kind: 'label' } : { kind: 'label', text: 'DEEPFAKE' });
     });
   }
   test(`${file}: fixed issue no longer lowers score`, () => {
