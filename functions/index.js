@@ -12,7 +12,7 @@ setGlobalOptions({ region: "europe-west1", memory: "512MiB", timeoutSeconds: 60 
 const db = getFirestore();
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 const MODEL = "gemini-3.8-flash"; // <- pune numele
-const FALLBACK_MODEL = "gemini-flash-latest";
+const FALLBACK_MODEL = "gemini-3.7-flash"; // trebuie să existe pe API v1 (implicit în SDK)
 const visionClient = new vision.ImageAnnotatorClient();
 
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
@@ -119,8 +119,8 @@ const SCHEMA = {
 };
 
 // Reîncercare pentru erorile temporare, apoi modelul de rezervă. Totul încape în limita de 60 s.
-const RETRY_SAME_MODEL = new Set([429, 500, 503, 504]);
-const ATTEMPTS_PER_MODEL = 2, ATTEMPT_TIMEOUT_MS = 22000, TOTAL_BUDGET_MS = 52000, MIN_ATTEMPT_MS = 3000;
+const RETRY_SAME_MODEL = new Set([429, 500, 503]);
+const ATTEMPTS_PER_MODEL = 2, ATTEMPT_TIMEOUT_MS = 30000, TOTAL_BUDGET_MS = 52000, MIN_ATTEMPT_MS = 3000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function generateWithRetry(ai, params) {
@@ -136,8 +136,8 @@ async function generateWithRetry(ai, params) {
       } catch (e) {
         lastError = e;
         console.warn(`Gemini ${model}, încercarea ${attempt}: ${e.status || "fără status"} ${e.message}`);
-        // fără status = timeout sau rețea; 404 = model indisponibil: trecem direct la rezervă
-        if (!e.status || e.status === 404) break;
+        // fără status = timeout sau rețea; 504 = termen depășit; 404 = model indisponibil: trecem direct la rezervă
+        if (!e.status || e.status === 504 || e.status === 404) break;
         if (!RETRY_SAME_MODEL.has(e.status)) throw e; // 400/401/403 nu se rezolvă prin reîncercare
         if (attempt < ATTEMPTS_PER_MODEL) await sleep(1000 * attempt);
       }
