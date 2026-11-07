@@ -12,6 +12,7 @@ setGlobalOptions({ region: "europe-west1", memory: "512MiB", timeoutSeconds: 60 
 const db = getFirestore();
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 const MODEL = "gemini-3.8-flash"; // <- pune numele
+const FALLBACK_MODEL = "gemini-flash-latest";
 const visionClient = new vision.ImageAnnotatorClient();
 
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
@@ -117,14 +118,41 @@ const SCHEMA = {
   required: ["issues", "aiDisclosure", "toneScore"],
 };
 
+// Reîncercare pentru erorile temporare, apoi modelul de rezervă. Totul încape în limita de 60 s.
+const RETRY_SAME_MODEL = new Set([429, 500, 503, 504]);
+const ATTEMPTS_PER_MODEL = 2, ATTEMPT_TIMEOUT_MS = 22000, TOTAL_BUDGET_MS = 52000, MIN_ATTEMPT_MS = 3000;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function generateWithRetry(ai, params) {
+  const start = Date.now();
+  let lastError;
+  for (const model of [MODEL, FALLBACK_MODEL]) {
+    for (let attempt = 1; attempt <= ATTEMPTS_PER_MODEL; attempt++) {
+      const remaining = TOTAL_BUDGET_MS - (Date.now() - start);
+      if (remaining < MIN_ATTEMPT_MS) throw lastError || new Error("Timp epuizat pentru audit");
+      try {
+        return await ai.models.generateContent({ ...params, model, config: { ...params.config,
+          httpOptions: { timeout: Math.min(ATTEMPT_TIMEOUT_MS, remaining) } } });
+      } catch (e) {
+        lastError = e;
+        console.warn(`Gemini ${model}, încercarea ${attempt}: ${e.status || "fără status"} ${e.message}`);
+        // fără status = timeout sau rețea; 404 = model indisponibil: trecem direct la rezervă
+        if (!e.status || e.status === 404) break;
+        if (!RETRY_SAME_MODEL.has(e.status)) throw e; // 400/401/403 nu se rezolvă prin reîncercare
+        if (attempt < ATTEMPTS_PER_MODEL) await sleep(1000 * attempt);
+      }
+    }
+  }
+  throw lastError;
+}
+
 exports.audit = onRequest({ cors: true, secrets: [GEMINI_API_KEY] }, handler(async (body) => {
   const { imageBase64, blocks = [], brandKit = {}, provenance = {} } = body;
   if (!imageBase64) throw new Error("imageBase64 lipsă");
   const key = "audit-" + sha(imageBase64 + JSON.stringify(provenance) + (brandKit.name || ""));
   return cached(key, async () => {
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY.value() });
-    const resp = await ai.models.generateContent({
-      model: MODEL,
+    const resp = await generateWithRetry(ai, {
       contents: [{ role: "user", parts: [
         { inlineData: { mimeType: "image/jpeg", data: imageBase64 } },
         { text: JSON.stringify({ blocks, brandKit, provenance }) },
