@@ -1,20 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ro">
     <head>
         <meta charset="UTF-8" />
-        <meta
-            name="description"
-            content="Get started with Add-on development using Spectrum Web Components and JavaScript with Document Sandbox Runtime"
-        />
-        <meta
-            name="keywords"
-            content="Adobe, Express, Add-On, Spectrum Web Components, JavaScript, Document Sandbox Runtime"
-        />
+        <meta name="description" content="PreFlight: verificare de conformitate înainte de publicarea unei reclame" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Get Started</title>
+        <title>PreFlight</title>
         <script type="module" src="add-on-console-override.js"></script>
+        <style>
+            body { margin: 0; padding: 16px; font-family: Inter, system-ui, sans-serif; color: #0f172a; }
+            button { width: 100%; padding: 10px; border: 0; border-radius: 8px; background: #4338ca; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+            button:disabled { opacity: 0.6; cursor: default; }
+            pre { margin: 12px 0 0; padding: 8px; font-size: 11px; white-space: pre-wrap; word-break: break-word; background: #f1f5f9; border-radius: 8px; }
+            pre:empty { display: none; }
+        </style>
     </head>
     <body>
-        <add-on-root></add-on-root>
+        <button id="scan" disabled>Scanează</button>
+        <pre id="output"></pre>
     </body>
 </html>

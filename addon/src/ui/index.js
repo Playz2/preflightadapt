@@ -1,23 +1,24 @@
-import { LitElement, html } from "lit";
-import { customElement, state } from "lit/decorators.js";
-import { until } from "lit/directives/until.js";
-import "./components/App";
+import addOnUISdk, { RuntimeType } from "https://new.express.adobe.com/static/add-on-sdk/sdk.js";
 
-import addOnUISdk from "https://new.express.adobe.com/static/add-on-sdk/sdk.js";
+const scanBtn = document.getElementById("scan");
+const output = document.getElementById("output");
 
-@customElement("add-on-root")
-export class Root extends LitElement {
-    @state()
-    _isAddOnUISdkReady = addOnUISdk.ready;
+addOnUISdk.ready.then(async () => {
+    const sandbox = await addOnUISdk.instance.runtime.apiProxy(RuntimeType.documentSandbox);
 
-    render() {
-        return html`
-            ${until(
-                this._isAddOnUISdkReady.then(async () => {
-                    console.log("addOnUISdk is ready for use.");
-                    return html`<add-on-app .addOnUISdk=${addOnUISdk}></add-on-app>`;
-                })
-            )}
-        `;
-    }
-}
+    scanBtn.addEventListener("click", async () => {
+        scanBtn.disabled = true;
+        output.textContent = "Se scanează...";
+        try {
+            const scan = await sandbox.scanPage();
+            output.textContent = JSON.stringify(scan, null, 2);
+        } catch (e) {
+            console.error(e);
+            output.textContent = "Eroare la scanare: " + (e.message || e);
+        } finally {
+            scanBtn.disabled = false;
+        }
+    });
+
+    scanBtn.disabled = false;
+});
