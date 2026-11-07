@@ -23,9 +23,10 @@ function clearScore() {
     for (const chip of document.querySelectorAll(".chip")) { chip.className = "chip"; chip.querySelector("b").textContent = "-"; }
 }
 
-function card(i) {
-    const btn = i.fixed ? "" : i.needsHumanInput ? '<button class="mini" disabled>Cere preț</button>'
-        : i.fix ? '<button class="mini" disabled>Fix</button>' : "";
+function card(i, idx, busy) {
+    const off = busy ? " disabled" : "";
+    const btn = i.fixed ? "" : i.needsHumanInput ? `<button class="mini" data-price="${idx}"${off}>Cere preț</button>`
+        : i.fix ? `<button class="mini" data-fix="${idx}"${off}>Fix</button>` : "";
     const sugg = i.fix?.kind === "replaceText" && !i.fixed ? `<div class="sugg">→ „${esc(i.fix.text)}”</div>` : "";
     const law = i.legalBasis ? `<div class="law">${esc(i.legalBasis)}</div>` : "";
     return `<div class="card ${esc(i.severity)}${i.fixed ? " fixed" : ""}"><div>
@@ -37,14 +38,14 @@ const techCard = (title, why) => `<div class="card error"><div><div class="sev">
     <b>${esc(title)}</b><div class="why">${esc(why)}</div></div></div>`;
 const SKELETONS = '<div class="skeleton"></div><div class="skeleton"></div>';
 
-// render({ loading, noText, error, issues, aiPending, aiError, score, cached })
+// render({ idle, loading, noText, error, issues, aiPending, aiError, score, cached, busy, from, fixErrors })
 export function render(o) {
     last = o;
     const list = $("issues"), status = $("status");
     const issues = o.issues || [];
     const open = issues.filter((i) => !i.fixed), done = issues.filter((i) => i.fixed);
     const visible = [...open, ...done].filter((i) => !filter || i.axis === filter);
-    let html = visible.map(card).join("");
+    let html = visible.map((i) => card(i, issues.indexOf(i), o.busy)).join("");
 
     if (o.score) {
         if (o.score.total !== shown) animateScore(o.score.total); // la filtrare scorul nu se schimbă, deci nu reluăm animația
@@ -53,7 +54,8 @@ export function render(o) {
             chip.querySelector("b").textContent = v;
             chip.className = `chip ${v >= 85 ? "ok" : v >= 50 ? "warn" : "bad"}${filter === a ? " active" : ""}`;
         }
-        status.textContent = `${open.length} ${open.length === 1 ? "problemă deschisă" : "probleme deschise"}${o.cached ? " • audit AI din cache" : ""}`;
+        const change = o.from != null && o.from !== o.score.total ? `Scor ${o.from} → ${o.score.total} • ` : "";
+        status.textContent = `${change}${open.length} ${open.length === 1 ? "problemă deschisă" : "probleme deschise"}${o.cached ? " • audit AI din cache" : ""}`;
         if (filter && !visible.length) html = `<div class="empty">Nicio problemă pe această axă.</div>`;
         if (!issues.length) html = `<div class="empty">Nicio problemă găsită.</div>`;
     } else {
@@ -61,7 +63,10 @@ export function render(o) {
         status.textContent = "";
     }
 
-    if (o.loading) { html = SKELETONS + SKELETONS; status.textContent = "Citesc pagina…"; }
+    if (o.loading) { // la re-verificare lăsăm cardurile tăiate vizibile până vine rezultatul nou
+        html = issues.length ? html + SKELETONS : SKELETONS + SKELETONS;
+        status.textContent = issues.length ? "Re-verific documentul…" : "Citesc pagina…";
+    }
     if (o.aiPending) { html += SKELETONS; status.textContent = "Analizez claim-urile și imaginea…"; }
     if (o.aiError) {
         html = techCard("Auditul AI nu a răspuns", `Legal și AI Act nu au fost verificate, așa că scorul nu e afișat. ${o.aiError}`) + html;
@@ -70,10 +75,33 @@ export function render(o) {
     if (o.error) html = techCard("Verificarea nu a reușit", o.error);
     if (o.noText) html = `<div class="empty">Nu am găsit texte editabile. Folosește text nativ sau aplicația web.</div>`;
     if (o.idle) html = `<div class="empty">Apasă „Rulează PreFlight” pentru pagina curentă.</div>`;
+    if (o.fixErrors?.length) html = techCard("Unele corecții nu s-au aplicat", o.fixErrors.join(" ")) + html;
     list.innerHTML = html;
 
     const fixable = open.filter((i) => i.fix).length;
     $("fixall").textContent = fixable ? `Fix all (${fixable} automate)` : "Fix all";
+    $("fixall").disabled = !fixable || !!o.busy;
+}
+
+// butoanele de pe carduri: „Fix” aplică direct, „Cere preț” deschide un câmp pentru omul care decide
+export function initCards({ onFix, onPrice }) {
+    const list = $("issues");
+    list.addEventListener("click", (e) => {
+        const fix = e.target.closest("[data-fix]"), ask = e.target.closest("[data-price]");
+        if (fix) onFix(last.issues[Number(fix.dataset.fix)]);
+        if (!ask) return;
+        const input = document.createElement("input");
+        input.className = "price";
+        input.placeholder = "Preț minim din ultimele 30 de zile, ex. 129 lei";
+        input.setAttribute("aria-label", "Preț de referință: prețul minim din ultimele 30 de zile");
+        const issue = last.issues[Number(ask.dataset.price)];
+        input.addEventListener("keydown", (ev) => {
+            if (ev.key === "Escape") render(last);
+            if (ev.key === "Enter" && input.value.trim()) onPrice(issue, input.value.trim());
+        });
+        ask.replaceWith(input);
+        input.focus();
+    });
 }
 
 // click pe chip: filtrează lista după axă; al doilea click scoate filtrul
