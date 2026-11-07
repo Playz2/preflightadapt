@@ -63,12 +63,23 @@ export function pageBackground(ctx) {
 export function expandToShape(ctx, b, fill, max = 220) {
   const W = ctx.canvas.width, H = ctx.canvas.height;
   const at = (x, y) => { const d = ctx.getImageData(Math.min(W - 1, Math.max(0, x)), Math.min(H - 1, Math.max(0, y)), 1, 1).data; return [d[0], d[1], d[2]]; };
+  const isFill = (x, y) => dist(at(x, y), fill) < 60;
   const cy = Math.round(b.y + b.h / 2), cx = Math.round(b.x + b.w / 2);
   let l = Math.floor(b.x), r = Math.ceil(b.x + b.w), t = Math.floor(b.y), btm = Math.ceil(b.y + b.h);
-  while (l > 0 && b.x - l < max && dist(at(l - 1, cy), fill) < 60) l--;
-  while (r < W - 1 && r - (b.x + b.w) < max && dist(at(r + 1, cy), fill) < 60) r++;
-  while (t > 0 && b.y - t < max && dist(at(cx, t - 1), fill) < 60) t--;
-  while (btm < H - 1 && btm - (b.y + b.h) < max && dist(at(cx, btm + 1), fill) < 60) btm++;
+  while (t > 0 && b.y - t < 20 && !isFill(cx, t - 1)) t--;
+  while (t > 0 && b.y - t < max && isFill(cx, t - 1)) t--;
+  while (btm < H - 1 && btm - (b.y + b.h) < 20 && !isFill(cx, btm + 1)) btm++;
+  while (btm < H - 1 && btm - (b.y + b.h) < max && isFill(cx, btm + 1)) btm++;
+  const safeY = b.y - t >= 6 ? Math.round((t + b.y) / 2) : cy;
+  for (const y of [cy, safeY]) {
+    let l0 = Math.floor(b.x), r0 = Math.ceil(b.x + b.w);
+    while (l0 > 0 && b.x - l0 < 24 && !isFill(l0 - 1, y)) l0--;
+    while (l0 > 0 && b.x - l0 < max && isFill(l0 - 1, y)) l0--;
+    while (r0 < W - 1 && r0 - (b.x + b.w) < 24 && !isFill(r0 + 1, y)) r0++;
+    while (r0 < W - 1 && r0 - (b.x + b.w) < max && isFill(r0 + 1, y)) r0++;
+    if (l0 < l) l = l0;
+    if (r0 > r) r = r0;
+  }
   return { x: l, y: t, w: r - l, h: btm - t };
 }
 
@@ -76,7 +87,12 @@ export function expandToShape(ctx, b, fill, max = 220) {
 export function analyze(ctx, blocks, kit) {
   const issues = [], pageBg = pageBackground(ctx), pal = kit.palette.map(hexToRgb);
   const scale = 1080 / ctx.canvas.width;
+  const norm = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+  const discPrefix = kit.requiredDisclaimer ? norm(kit.requiredDisclaimer).slice(0, 25) : "";
   for (const b of blocks) {
+    if (b.fontPx * scale < 18) continue; // ignoră inscripțiile mici din fotografii (ecusoane, ambalaje)
+    if (discPrefix && norm(b.text).includes(discPrefix)) continue;
+    if (/generat(ă|a)?\s+cu\s+a[il1|](?![\p{L}\p{N}])/iu.test(b.text)) continue;
     const s = splitTextAndBg(ctx, b.bbox);
     if (!s) continue;
     b.textColor = toHex(s.text); b.bgColor = toHex(s.bg);
@@ -106,7 +122,6 @@ export function analyze(ctx, blocks, kit) {
     }
   }
   // 3. disclaimer obligatoriu
-  const norm = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
   if (kit.requiredDisclaimer) {
     const all = norm(blocks.map((b) => b.text).join(" "));
     if (!all.includes(norm(kit.requiredDisclaimer).slice(0, 30))) issues.push({
