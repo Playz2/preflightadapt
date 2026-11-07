@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "public": "public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "/api/ocr", "function": { "functionId": "ocr", "region": "europe-west1" } },
+      { "source": "/api/audit", "function": { "functionId": "audit", "region": "europe-west1" } },
+      { "source": "/api/log", "function": { "functionId": "log", "region": "europe-west1" } }
+    ]
+  },
+  "functions": [{ "source": "functions", "codebase": "default" }],
+  "firestore": { "rules": "firestore.rules" }
+}
