@@ -3,75 +3,598 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PreFlight - verificare înainte de publicare</title>
+  <title>PreFlight: verifică înainte să decolezi</title>
+  <meta name="description" content="PreFlight verifică o reclamă înainte de publicare, direct în Adobe Express: brand, accesibilitate WCAG, claim-uri legale și EU AI Act Art. 50 cu Content Credentials." />
+  <meta name="theme-color" content="#0F172A" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234338CA'/%3E%3Cpath d='M7 15 25 7l-5 18-4.4-6.4L7 15Z' fill='%23fff'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preload" as="image" href="demo/hero-persoana.jpg" />
+  <link rel="stylesheet" href="site.css?v=3" />
+  <script>document.documentElement.classList.add("js");</script>
+  <script type="module" src="site.js?v=3"></script>
 </head>
 <body>
-  <header>
-    <div class="brand">
-      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
-        <rect width="26" height="26" rx="6" fill="#4338CA" />
-        <path d="M5 13 L21 5.5 L15.5 20.5 L12.5 15 Z" fill="#fff" />
-        <circle cx="23" cy="23" r="5.4" fill="#16A34A" stroke="#0F172A" stroke-width="1.4" />
-        <path d="M20.6 22.9 L22.4 24.6 L25.4 21.2" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
-      <span class="name">PreFlight</span>
-      <span class="tag">Verifică înainte să decolezi.</span>
+  <a class="skip" href="#continut">Sari la conținut</a>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="logo" viewBox="0 0 32 32">
+      <rect width="28" height="28" rx="7" fill="#4338CA" />
+      <path d="M6 13.6 22 6.2l-4.4 16-3.9-5.7-7.7-2.9Z" fill="#fff" />
+      <path d="M13.7 16.5 22 6.2" stroke="#4338CA" stroke-width="1" />
+      <circle cx="25" cy="25" r="6.2" fill="#15803D" stroke="#0F172A" stroke-width="1.5" />
+      <path d="m22.3 25 1.9 1.9 3.5-3.8" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+    <symbol id="plane" viewBox="0 0 24 24">
+      <path d="M2.5 10.8 21.5 2.5l-5.4 19-4.9-7.1-8.7-3.6Z" fill="currentColor" />
+      <path d="M11.2 14.4 21.5 2.5" stroke="#0F172A" stroke-opacity=".35" stroke-width="1" />
+    </symbol>
+    <symbol id="check" viewBox="0 0 16 16"><path d="m3 8.5 3.2 3.2L13 4.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></symbol>
+  </svg>
+
+  <!-- ==================== Antet flotant ==================== -->
+  <header class="hdr" id="hdr">
+    <div class="hdr-row">
+      <a class="hdr-brand" href="#sus" aria-label="PreFlight, începutul paginii">
+        <svg width="32" height="32" aria-hidden="true"><use href="#logo" /></svg>
+        <span>PreFlight</span>
+      </a>
+      <span class="hdr-live"><i class="pulse" aria-hidden="true"></i>Hackathon Adobe · 7 nov. 2026 · Live în Express</span>
+      <nav class="hdr-nav" aria-label="Secțiuni">
+        <a href="#demo" data-spy="demo">Demo &amp; Plugin</a>
+        <a href="#vitaboost" data-spy="vitaboost">Cazul VitaBoost</a>
+        <a href="#arhitectura" data-spy="arhitectura">Arhitectură</a>
+        <a href="#lege-roi" data-spy="lege-roi">Lege &amp; ROI</a>
+        <a href="#juriu" data-spy="juriu">Întrebări Juriu</a>
+      </nav>
+      <a class="btn btn-primary btn-sm magnetic" href="#launchpad"><span class="wide-only">Deschide în</span>Adobe Express</a>
     </div>
-    <div class="kit" id="kit"></div>
+    <div class="route" aria-hidden="true">
+      <div class="route-fill" id="routeFill"></div>
+      <svg class="route-plane" id="routePlane" width="16" height="16"><use href="#plane" /></svg>
+    </div>
   </header>
 
-  <main>
-    <section class="left">
-      <label id="empty" class="drop big">
-        <input id="file" type="file" accept="image/png,image/jpeg" hidden />
-        <strong>Trage aici reclama</strong>
-        <span>PNG sau JPG exportat din Adobe Express • sau click pentru a alege</span>
-      </label>
-
-      <div id="stage" hidden>
-        <div class="toolbar">
-          <div class="seg"><button id="before">Înainte</button><button id="after" class="on">După</button></div>
-          <div class="spacer"></div>
-          <button id="reset" class="ghost">Reia de la original</button>
-          <button id="download" class="ghost">Descarcă PNG</button>
+  <main id="continut">
+    <!-- ==================== Hero ==================== -->
+    <section class="hero" id="sus" aria-labelledby="hero-title">
+      <div class="wrap">
+        <h1 id="hero-title" class="hero-title">
+          <span class="line"><span>3% din cifra de afaceri.</span></span>
+          <span class="line"><span>Pentru o singură imagine.</span></span>
+        </h1>
+        <div class="hero-sub">
+          <p>Verificarea de conformitate înainte de publicare, direct în Adobe Express. Brand, Accesibilitate WCAG, Claim-uri legale și EU AI Act Art. 50 + Content Credentials — verificate și reparate cu un singur click.</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary magnetic" href="#simulare">Încearcă Fix all</a>
+            <a class="btn btn-ghost-dark" href="#launchpad">Deschide în Adobe Express</a>
+          </div>
         </div>
-        <div class="canvaswrap"><canvas id="view"></canvas></div>
-        <label id="sources" class="drop small">
-          <input id="srcfile" type="file" accept="image/*" multiple hidden />
-          <b>Imagini sursă (opțional)</b>: trage aici imaginile originale din Firefly pentru verificarea Content Credentials
-        </label>
+
+        <div class="flightline" aria-hidden="true">
+          <svg class="flightline-plane" width="22" height="22"><use href="#plane" /></svg>
+        </div>
+        <dl class="metrics">
+          <div><dt>60.000 €</dt><dd>Plafonul amenzii Art. 99(4)/(6) pentru un IMM cu 2 mil. € cifră de afaceri.</dd></div>
+          <div><dt>54 → 96</dt><dd>Creșterea scorului de conformitate în 40 de secunde cu Fix all.</dd></div>
+          <div><dt>0,02 € vs. 8 €</dt><dd>Costul unei verificări automate față de 20 min. de review manual.</dd></div>
+          <div><dt class="mono">europe-west1</dt><dd>Funcții și date în UE, fără stocarea imaginilor pe server.</dd></div>
+        </dl>
+
+        <!-- Simularea: reclama și panoul -->
+        <div class="xp" id="simulare">
+          <div class="xp-bar">
+            <span class="tagline"><b class="tag tag-indigo">Simulare</b> Postare VitaBoost, 1080 × 1080. Scorul vine din formula reală a motorului.</span>
+            <button class="btn btn-quiet btn-sm" id="simReset" type="button">Resetează demo (Scor 54)</button>
+          </div>
+          <div class="xp-body">
+            <div class="xp-canvas"><div id="simAdSlot" class="ad-slot"></div></div>
+            <section class="pf" aria-label="Panoul PreFlight, simulare">
+              <h2 class="sr-only">Panoul PreFlight</h2>
+              <div class="pf-head">
+                <svg width="24" height="24" aria-hidden="true"><use href="#logo" /></svg>
+                <b>PreFlight</b>
+                <label class="sr-only" for="pfKit">Brand kit activ</label>
+                <select id="pfKit" class="pf-kit"><option>Brand kit: VitaBoost</option></select>
+              </div>
+              <div class="pf-top">
+                <div class="pf-ring" id="pfRing" data-state="warn">
+                  <svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+                    <circle class="ring-track" cx="60" cy="60" r="52" />
+                    <circle class="ring-value" id="pfRingValue" cx="60" cy="60" r="52" transform="rotate(-90 60 60)" />
+                  </svg>
+                  <div class="ring-label"><span id="pfScore">54</span><small>din 100</small></div>
+                </div>
+                <div class="pf-chips" role="group" aria-label="Filtrează după axă">
+                  <button type="button" class="pf-chip" data-axis="brand" aria-pressed="false"><b>70</b><span>Brand</span></button>
+                  <button type="button" class="pf-chip" data-axis="accessibility" aria-pressed="false"><b>60</b><span>Accesib.</span></button>
+                  <button type="button" class="pf-chip" data-axis="legal" aria-pressed="false"><b>30</b><span>Legal</span></button>
+                  <button type="button" class="pf-chip" data-axis="ai_act" aria-pressed="false"><b>60</b><span>AI Act</span></button>
+                </div>
+              </div>
+              <p class="pf-status" id="pfStatus" role="status">6 probleme deschise</p>
+              <div class="pf-list" id="pfList"></div>
+              <div class="pf-foot">
+                <button type="button" class="btn btn-primary btn-block" id="pfFixAll">Fix all (5 automate)</button>
+                <button type="button" class="btn btn-outline btn-block btn-sm" id="pfReport">Raport de conformitate (PDF)</button>
+                <p class="pf-note">Suport decizional, nu consultanță juridică.</p>
+              </div>
+            </section>
+          </div>
+        </div>
       </div>
     </section>
 
-    <aside class="panel">
-      <div id="ring" class="ring"><div><span id="score">-</span><small>din 100</small></div></div>
-      <div class="chips">
-        <div id="chip-brand" class="chip"><b>-</b><span>Brand</span></div>
-        <div id="chip-accessibility" class="chip"><b>-</b><span>Accesib.</span></div>
-        <div id="chip-legal" class="chip"><b>-</b><span>Legal</span></div>
-        <div id="chip-ai_act" class="chip"><b>-</b><span>AI Act</span></div>
-      </div>
-      <div class="tol-box">
-        <div class="tol-head">
-          <label for="min-area">Toleranță suprafață minimă</label>
-          <b id="min-area-val">0.5%</b>
+    <!-- ==================== Launchpad și imagini de test ==================== -->
+    <section class="sec sec-surface sec-after-hero" id="demo" aria-labelledby="demo-title" data-section>
+      <div class="wrap">
+        <header class="sec-head reveal">
+          <h2 id="demo-title">Pornești demo-ul de aici.</h2>
+          <p>Deschizi proiectul în Express, iei imaginile de test sau rulezi verificarea direct în pagină.</p>
+        </header>
+
+        <div class="launch" id="launchpad">
+          <div class="launch-main reveal">
+            <h3>Adobe Express + add-on PreFlight</h3>
+            <a class="btn btn-primary btn-lg magnetic" id="expressLink" href="https://new.express.adobe.com/" target="_blank" rel="noopener">Deschide proiectul în Adobe Express <span aria-hidden="true">↗</span></a>
+            <form class="url-form" id="urlForm" novalidate>
+              <label for="urlInput">Link-ul proiectului sau al sesiunii add-on</label>
+              <div class="url-row">
+                <input id="urlInput" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://new.express.adobe.com/..." />
+                <button class="btn btn-ghost-dark btn-sm" type="submit">Salvează</button>
+              </div>
+              <p class="hint" id="urlHint">Se păstrează doar în acest browser.</p>
+            </form>
+            <ul class="stat-list">
+              <li>
+                <i class="dot" id="pingDot" data-state="wait" aria-hidden="true"></i>
+                <span><code>/audit</code> pe <code>europe-west1</code></span>
+                <b id="pingText" role="status">Se verifică…</b>
+              </li>
+              <li>
+                <i class="dot" id="cacheDot" data-state="idle" aria-hidden="true"></i>
+                <span>Cache după <code>SHA-256</code></span>
+                <b id="cacheText" role="status">Se confirmă la a doua rulare</b>
+              </li>
+            </ul>
+          </div>
+
+          <div class="launch-side reveal">
+            <h3>Pașii din Express</h3>
+            <ol class="steps">
+              <li><b>Deschide postarea în Express.</b> Text și forme native, cu imaginea Firefly peste. Add-on-ul citește documentul prin Document Sandbox.</li>
+              <li><b>Apasă „Rulează PreFlight”.</b> Rezultatele deterministe apar imediat. Auditul AI vine după ele, de obicei în sub 20 de secunde la prima rulare și aproape instant din cache.</li>
+              <li><b>Apasă „Fix all”.</b> Modificările se aplică direct în document și se pot anula cu Undo.</li>
+            </ol>
+            <p class="note note-amber"><b>Add-on-ul vede doar elemente native.</b> O postare PNG lipită în Express e o singură imagine, fără texte de citit sau de reparat. Pentru ea folosește sandboxul de mai jos, care citește pixelii prin OCR și Content Credentials prin WASM. În add-on, Content Credentials nu se citesc încă, deci imaginea AI rămâne atenționare, nu eroare.</p>
+          </div>
         </div>
-        <input id="min-area" type="range" min="0" max="20" step="0.5" value="0.5" />
-        <small>Ignoră elementele cu suprafața &lt; <span id="min-area-inline">0.5</span>% din pagină</small>
+
+        <h3 class="sub-title reveal" id="imagini">Imaginile de test</h3>
+        <p class="sub-lead reveal">Descarci, sau tragi miniatura pe desktop, în sandbox ori în Express. Dacă Express nu preia imaginea trasă, folosește butonul de descărcare.</p>
+        <div class="passes">
+          <article class="pass pass-wide reveal">
+            <div class="pass-preview">
+              <img class="pass-thumb" draggable="true" src="demo/thumb-vitaboost.jpg" width="480" height="480" loading="lazy" alt="Postarea VitaBoost cu cele 6 probleme: titlu palid, claim de vindecare, buton roșu și fotografie fără etichetă." data-drag="demo/vitaboost-postare.png" data-name="vitaboost-postare.png" data-type="image/png" />
+            </div>
+            <div class="pass-perf" aria-hidden="true"></div>
+            <div class="pass-body">
+              <div class="pass-title"><b class="pass-code">A</b><div><h4>VitaBoost</h4><p>Demo principal</p></div></div>
+              <dl class="pass-facts"><div><dt>Probleme</dt><dd>6</dd></div><div><dt>Scor</dt><dd>54 → 96</dd></div></dl>
+              <div class="pass-actions">
+                <button type="button" class="btn btn-primary btn-sm btn-block" data-test="a">Testează în sandbox</button>
+                <a class="btn btn-outline btn-sm btn-block" href="demo/foto_persoana.jpg" download>Descarcă Imaginea Firefly (cu C2PA Content Credentials)</a>
+                <a class="btn btn-outline btn-sm btn-block" href="demo/vitaboost-postare.png" download>Descarcă Postarea 1080×1080 (PNG)</a>
+                <button type="button" class="btn btn-outline btn-sm btn-block" id="copyKit">Copiază Brand Kit JSON (VitaBoost)</button>
+              </div>
+              <p class="pass-note"><b>În rularea reală.</b> Modelul poate semnala separat urgența sau tonul, deci scorul de pornire poate fi sub 54. După Fix all ajunge la același 96.</p>
+              <p class="pass-note"><b>Varianta cu medic.</b> <a href="demo/foto_medic.jpg" download>Imaginea cu halat și ecuson</a> declanșează o eroare pe Reg. (CE) 1924/2006 (recomandări de la medici, art. 12(c)). Ea rămâne până când omul schimbă poza, deci scorul nu ajunge la 96.</p>
+            </div>
+          </article>
+
+          <article class="pass reveal">
+            <div class="pass-preview">
+              <img class="pass-thumb" draggable="true" src="demo/thumb-brutarie.jpg" width="480" height="480" loading="lazy" alt="Ilustrație stilizată cu o pâine, spice de grâu și un soare, pentru o brutărie." data-drag="demo/asset-b-brutarie.png" data-name="asset-b-brutarie.png" data-type="image/png" />
+            </div>
+            <div class="pass-perf" aria-hidden="true"></div>
+            <div class="pass-body">
+              <div class="pass-title"><b class="pass-code">B</b><div><h4>Brutărie Artizanală</h4><p>Testul de judecată AI</p></div></div>
+              <p class="pass-text">Modelul nu aplică reguli oarbe: distinge un deepfake fotorealist de o ilustrație stilizată. Pentru aceasta din urmă, eticheta AI e <b>recomandată, nu obligatorie</b>, conform Art. 50(4).</p>
+              <div class="pass-actions">
+                <button type="button" class="btn btn-primary btn-sm btn-block" data-test="b">Testează în sandbox</button>
+                <a class="btn btn-outline btn-sm btn-block" href="demo/asset-b-brutarie.png" download>Descarcă imaginea</a>
+              </div>
+              <p class="pass-note">Fișierul e desenat vectorial, fără Content Credentials. Rulează pe brand kit-ul VitaBoost, deci semnalează și disclaimerul de suplimente.</p>
+            </div>
+          </article>
+
+          <article class="pass reveal">
+            <div class="pass-preview">
+              <img class="pass-thumb" draggable="true" src="demo/thumb-control.jpg" width="480" height="480" loading="lazy" alt="Reclamă VitaBoost conformă: titlu lizibil, buton portocaliu din paletă, disclaimer vizibil și ilustrație cu un flacon." data-drag="demo/asset-c-control.png" data-name="asset-c-control.png" data-type="image/png" />
+            </div>
+            <div class="pass-perf" aria-hidden="true"></div>
+            <div class="pass-body">
+              <div class="pass-title"><b class="pass-code">C</b><div><h4>Control negativ</h4><p>Reclamă conformă</p></div></div>
+              <p class="pass-text">Layout fără erori, pentru cazul în care juriul cere un test al absenței alarmelor false.</p>
+              <dl class="pass-facts"><div><dt>Probleme</dt><dd>0</dd></div><div><dt>Scor</dt><dd>100/100</dd></div></dl>
+              <div class="pass-actions">
+                <button type="button" class="btn btn-primary btn-sm btn-block" data-test="c">Testează în sandbox</button>
+                <a class="btn btn-outline btn-sm btn-block" href="demo/asset-c-control.png" download>Descarcă imaginea</a>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="sandbox reveal" id="sandbox">
+          <div class="sandbox-head">
+            <div>
+              <h3 class="sub-title">Sandbox web: planul B, integrat</h3>
+              <p class="sub-lead">Motorul real, fără Express: OCR, Content Credentials, contrast, paletă, audit AI și Fix all pe canvas.</p>
+            </div>
+            <a class="btn btn-outline btn-sm" href="app.html" target="_blank" rel="noopener">Deschide pe tot ecranul <span aria-hidden="true">↗</span></a>
+          </div>
+          <div class="tabs" role="tablist" aria-label="Mod de demo" data-tabs>
+            <button type="button" role="tab" id="tab-live" aria-controls="panel-live" aria-selected="true">Sandbox live</button>
+            <button type="button" role="tab" id="tab-video" aria-controls="panel-video" aria-selected="false" tabindex="-1">Video de backup (70 s)</button>
+          </div>
+          <p class="tool-msg" id="toolMsg" role="status" hidden></p>
+          <div role="tabpanel" id="panel-live" aria-labelledby="tab-live">
+            <iframe id="toolFrame" class="tool-frame" src="app.html" title="Aplicația PreFlight: încarcă o reclamă și rulează verificarea" loading="lazy"></iframe>
+          </div>
+          <div role="tabpanel" id="panel-video" aria-labelledby="tab-video" hidden>
+            <div class="video-box" id="videoBox">
+              <div class="video-empty" id="videoEmpty">
+                <h4>Înregistrarea de 70 de secunde nu e încărcată încă.</h4>
+                <p>Până atunci, simularea din pagină funcționează și fără backend.</p>
+                <a class="btn btn-primary btn-sm" href="#simulare">Mergi la simulare</a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div id="prov" class="prov"></div>
-      <div id="status" class="status"></div>
-      <div id="issues" class="issues"></div>
-      <div class="actions">
-        <button id="fixall" class="primary" disabled>Fix all</button>
-        <button id="run" class="secondary">Re-verifică</button>
+    </section>
+
+    <!-- ==================== Anatomia celor 6 probleme ==================== -->
+    <section class="sec" id="vitaboost" aria-labelledby="vb-title" data-section>
+      <div class="wrap">
+        <header class="sec-head reveal">
+          <h2 id="vb-title">Cele 6 probleme din VitaBoost.</h2>
+          <p>Fiecare e prinsă de altă componentă, ca demo-ul să arate tot sistemul. Trage bara ca să compari.</p>
+        </header>
+
+        <div class="anatomy">
+          <div class="anatomy-left reveal">
+            <div class="cmp" id="cmp">
+              <div class="cmp-layer cmp-after" id="cmpAfter"></div>
+              <div class="cmp-layer cmp-before" id="cmpBefore">
+                <button type="button" class="pin pin-e" data-pin="1" style="left:1%;top:2.5%" aria-label="Problema 1: contrastul titlului">1</button>
+                <button type="button" class="pin pin-e" data-pin="2" style="left:41%;top:2.5%" aria-label="Problema 2: claim de vindecare">2</button>
+                <button type="button" class="pin pin-w" data-pin="4" style="left:61%;top:17%" aria-label="Problema 4: superlativ">4</button>
+                <button type="button" class="pin pin-e" data-pin="3" style="left:59%;top:24%" aria-label="Problema 3: imagine AI fără etichetă">3</button>
+                <button type="button" class="pin pin-w" data-pin="6" style="left:52%;top:47%" aria-label="Problema 6: reducere fără preț de referință">6</button>
+                <button type="button" class="pin pin-w" data-pin="5" style="left:46%;top:69%" aria-label="Problema 5: buton în afara paletei">5</button>
+              </div>
+              <div class="cmp-handle" aria-hidden="true"><span></span></div>
+              <label class="sr-only" for="cmpRange">Compară înainte și după</label>
+              <input class="cmp-range" id="cmpRange" type="range" min="0" max="100" value="66" />
+            </div>
+            <div class="cmp-foot">
+              <div class="seg" role="group" aria-label="Alege versiunea">
+                <button type="button" id="cmpShowBefore">Înainte, scor 54</button>
+                <button type="button" id="cmpShowAfter">După Fix all, scor 96</button>
+              </div>
+            </div>
+
+            <div class="insight">
+              <h3>Detaliul de la problema 5</h3>
+              <p>Dacă schimbi doar culoarea butonului în portocaliul de brand <code>#F97316</code> și lași textul alb, contrastul scade la 2,8:1. PreFlight recalculează și trece textul pe <code>#0F172A</code>.</p>
+              <div class="insight-swatches">
+                <div><span class="swatch swatch-bad">Comandă acum</span><small>Text alb: <b>2,8:1</b></small></div>
+                <div><span class="swatch swatch-good">Comandă acum</span><small>Text <code>#0F172A</code>: <b>6,4:1</b></small></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="anatomy-right reveal">
+            <table class="issues-table" id="issuesTable">
+              <caption class="sr-only">Cele 6 probleme, cine le prinde și cum se repară</caption>
+              <thead><tr><th scope="col">Nr.</th><th scope="col">Problema</th><th scope="col">Cine o prinde</th><th scope="col">Cum se repară</th></tr></thead>
+              <tbody>
+                <tr data-row="1"><td data-label="Nr."><b class="row-n row-e">1</b></td>
+                  <td data-label="Problema">Titlu <code>#C9C2B8</code> pe fundal <code>#F3EDE4</code></td>
+                  <td data-label="Cine o prinde"><b>Motor determinist.</b> Contrast <code>1,52:1</code>, sub minimul WCAG de <code>3:1</code> pentru text mare (<code>4,5:1</code> pentru text normal).</td>
+                  <td data-label="Cum se repară">Text pe <code>#0F172A</code>, contrast <code>15,3:1</code>.</td></tr>
+                <tr data-row="2"><td data-label="Nr."><b class="row-n row-e">2</b></td>
+                  <td data-label="Problema">Claim medical: „Vindecă oboseala în 7 zile!”</td>
+                  <td data-label="Cine o prinde"><b>LLM (legal).</b> Reg. (UE) 1169/2011, art. 7(3).</td>
+                  <td data-label="Cum se repară">Rescris în tonul brandului: „Mai multă energie, zi de zi”.</td></tr>
+                <tr data-row="3"><td data-label="Nr."><b class="row-n row-e">3</b></td>
+                  <td data-label="Problema">Imagine Firefly: persoană fotorealistă ținând flaconul</td>
+                  <td data-label="Cine o prinde"><b>Content Credentials (WASM) + LLM vision.</b> EU AI Act, art. 50(4).</td>
+                  <td data-label="Cum se repară">Insignă vizibilă: „Imagine generată cu AI”.</td></tr>
+                <tr data-row="4"><td data-label="Nr."><b class="row-n row-w">4</b></td>
+                  <td data-label="Problema">Subtitlu: „Cel mai bun supliment din România”</td>
+                  <td data-label="Cine o prinde"><b>LLM (legal).</b> Superlativ nedovedit, Legea 158/2008.</td>
+                  <td data-label="Cum se repară">Rescris: „Formulă cu magneziu și vitamina B6”.</td></tr>
+                <tr data-row="5"><td data-label="Nr."><b class="row-n row-w">5</b></td>
+                  <td data-label="Problema">Buton CTA <code>#E11D48</code> cu text alb</td>
+                  <td data-label="Cine o prinde"><b>Motor determinist.</b> În afara paletei: <code>ΔE 48</code> în CIE Lab față de <code>#F97316</code>.</td>
+                  <td data-label="Cum se repară">Fill pe <code>#F97316</code>, text pe <code>#0F172A</code>, contrast <code>6,4:1</code>.</td></tr>
+                <tr data-row="6"><td data-label="Nr."><b class="row-n row-w">6</b></td>
+                  <td data-label="Problema">„-70% doar azi” și lipsa disclaimerului</td>
+                  <td data-label="Cine o prinde"><b>LLM + regula din Brand Kit.</b> Dir. 98/6/CE art. 6a (Omnibus), Legea 363/2007.</td>
+                  <td data-label="Cum se repară">Disclaimer adăugat automat. Prețul de referință din ultimele 30 de zile îl introduce omul.</td></tr>
+              </tbody>
+            </table>
+            <div class="notes-grid">
+              <p class="note note-indigo"><b>De ce poate diferi scorul de pornire?</b> 54 e cazul din dosar, cu Content Credentials citite. Fără ele, imaginea AI e doar atenționare și scorul ar fi 59. Modelul poate semnala separat urgența sau tonul: într-o rulare reală pe asset-ul A, cu 10 constatări, scorul a urcat de la 42 la 96.</p>
+              <p class="note note-red"><b>De ce nu un medic în poză?</b> Art. 12(c) din Reg. (CE) 1924/2006 interzice trimiterile la recomandările medicilor. PreFlight semnalează halatul sau ecusonul din imagine, dar nu le poate repara singur.</p>
+            </div>
+          </div>
+        </div>
       </div>
-      <p class="disclaimer">Suport decizional, nu consultanță juridică. Decizia finală rămâne la tine.</p>
-    </aside>
+    </section>
+
+    <!-- ==================== Arhitectura ==================== -->
+    <section class="sec sec-surface" id="arhitectura" aria-labelledby="arch-title" data-section>
+      <div class="wrap">
+        <header class="sec-head reveal">
+          <h2 id="arch-title">Cod unde e exact, AI unde e judecată.</h2>
+          <p>Ce se poate măsura se calculează în browser, fără cost. La model ajunge doar judecata juridică și vizuală, iar scorul rămâne la cod.</p>
+        </header>
+
+        <div class="arch">
+          <div class="arch-left reveal">
+            <div class="arch-steps" role="group" aria-label="Pașii fluxului">
+              <button type="button" data-step="0" aria-pressed="true">0</button>
+              <button type="button" data-step="1" aria-pressed="false">1</button>
+              <button type="button" data-step="2" aria-pressed="false">2</button>
+              <button type="button" data-step="3" aria-pressed="false">3</button>
+              <button type="button" data-step="4" aria-pressed="false">4</button>
+              <p id="archText" role="status"></p>
+            </div>
+            <div class="diagram" id="diagram">
+              <svg class="diagram-lines" id="diagramLines" aria-hidden="true"></svg>
+              <div class="band">
+                <h3>Adobe Express <small>Rulează în browserul utilizatorului</small></h3>
+                <div class="band-grid band-a">
+                  <div class="node" data-node="n0"><b><i>0</i> Poarta C2PA</b><code>@contentauth/c2pa-web</code><span>Citește Content Credentials din fișierul original. În aplicația web; în add-on urmează.</span></div>
+                  <div class="node" data-node="n1"><b><i>1</i> Panou PreFlight</b><code>createRenditions()</code><span>Iframe cu Add-on UI SDK: randare, scor, carduri.</span></div>
+                  <div class="node" data-node="n4"><b><i>4</i> Document Sandbox</b><code>scanPage()</code><span><code class="inl">express-document-sdk</code> citește texte, culori, poziții și aplică fix-urile.</span></div>
+                  <div class="node node-center" data-node="n2"><b><i>2</i> Motor determinist</b><code>WCAG 2.2 · ΔE Lab · scor</code><span>Pe pixeli reali, în browser, cu 0 € cost.</span></div>
+                </div>
+              </div>
+              <div class="band">
+                <h3>Firebase <code>europe-west1</code> <small>Date în UE</small></h3>
+                <div class="band-grid band-3">
+                  <div class="node" data-node="fs"><b>Firestore</b><code>cache · audits</code><span>Hash SHA-256 și rezultat, fără imagini.</span></div>
+                  <div class="node" data-node="n3"><b><i>3</i> Cloud Function /audit</b><code>responseSchema · temp. 0,2</code><span>Elimină problemele fără citat sau casetă validă.</span></div>
+                  <div class="node" data-node="sm"><b>Secret Manager</b><code>GEMINI_API_KEY</code><span>Cheia nu ajunge niciodată în client.</span></div>
+                </div>
+              </div>
+              <div class="band">
+                <h3>Servicii externe</h3>
+                <div class="band-grid band-4">
+                  <div class="node" data-node="cv"><b>Cloud Vision</b><span>OCR pentru aplicația web.</span></div>
+                  <div class="node" data-node="ge"><b>Gemini API</b><span>Vision + JSON: claim-uri, ton, risc Art. 50(4).</span></div>
+                  <div class="node node-planned" data-node="pdf"><b>Adobe PDF Services</b><span>Ghid de brand PDF în brand kit.</span><em>Planificat</em></div>
+                  <div class="node node-planned" data-node="sl"><b>Slack Webhook</b><span>„Asset aprobat de PreFlight”.</span><em>Planificat</em></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="inspector reveal">
+            <div class="tabs tabs-dark" role="tablist" aria-label="Inspector de cod" data-tabs>
+              <button type="button" role="tab" id="tab-json" aria-controls="panel-json" aria-selected="true">Contract JSON LLM</button>
+              <button type="button" role="tab" id="tab-fs" aria-controls="panel-fs" aria-selected="false" tabindex="-1">Model Firestore</button>
+              <button type="button" role="tab" id="tab-score" aria-controls="panel-score" aria-selected="false" tabindex="-1">Formula de Scor</button>
+            </div>
+<div role="tabpanel" id="panel-json" aria-labelledby="tab-json" tabindex="0"><pre><code><span class="c">// Validat cu responseSchema, temperatura 0,2</span>
+{
+  <span class="k">"issues"</span>: [{
+    <span class="k">"axis"</span>: <span class="s">"legal"</span>,        <span class="c">// brand | legal</span>
+    <span class="k">"severity"</span>: <span class="s">"error"</span>,    <span class="c">// error | warning | info</span>
+    <span class="k">"blockId"</span>: <span class="s">"b1"</span>,        <span class="c">// blocul de text sau null</span>
+    <span class="k">"quote"</span>: <span class="s">"Vindecă oboseala în 7 zile!"</span>,
+    <span class="k">"title"</span>: <span class="s">"Claim de vindecare interzis"</span>,
+    <span class="k">"explanation"</span>: <span class="s">"Suplimentele nu pot pretinde
+      că vindecă o afecțiune."</span>,
+    <span class="k">"legalBasis"</span>: <span class="s">"Reg. (UE) 1169/2011 art. 7(3)"</span>,
+    <span class="k">"suggestedText"</span>: <span class="s">"Mai multă energie, zi de zi"</span>,
+    <span class="k">"suggestions"</span>: [<span class="s">"Mai multă energie, zi de zi"</span>],
+    <span class="k">"needsHumanInput"</span>: <span class="n">false</span>,
+    <span class="k">"region"</span>: <span class="n">null</span>,          <span class="c">// [ymin, xmin, ymax, xmax]</span>
+    <span class="k">"confidence"</span>: <span class="s">"high"</span>     <span class="c">// high | medium | low</span>
+  }],
+  <span class="k">"aiDisclosure"</span>: {
+    <span class="k">"photorealistic"</span>: <span class="n">true</span>,
+    <span class="k">"depictsRealPersonLike"</span>: <span class="n">true</span>,
+    <span class="k">"disclosureRequired"</span>: <span class="n">true</span>,
+    <span class="k">"reasoning"</span>: <span class="s">"..."</span>
+  },
+  <span class="k">"toneScore"</span>: <span class="n">62</span>
+}</code></pre></div>
+<div role="tabpanel" id="panel-fs" aria-labelledby="tab-fs" tabindex="0" hidden><pre><code><span class="c">// Cache: aceeași imagine nu se plătește de două ori</span>
+<span class="k">cache/</span>{<span class="s">"audit-v5-" + sha256(imagine + proveniență + kit)</span>}
+  <span class="k">result</span>: { issues, aiDisclosure, toneScore }
+  <span class="k">at</span>: serverTimestamp
+
+<span class="k">cache/</span>{<span class="s">"ocr-" + sha256(imagine)</span>}
+  <span class="k">result</span>: { blocks: [{ id, text, bbox, fontPx }] }
+  <span class="k">at</span>: serverTimestamp
+
+<span class="c">// Jurnalul de audit</span>
+<span class="k">audits/</span>{auditId}
+  <span class="k">kit</span>: <span class="s">"VitaBoost"</span>
+  <span class="k">scoreBefore</span>: <span class="n">54</span>, <span class="k">scoreAfter</span>: <span class="n">96</span>
+  <span class="k">axes</span>: { brand: <span class="n">100</span>, accessibility: <span class="n">100</span>,
+          legal: <span class="n">85</span>, ai_act: <span class="n">100</span> }
+  <span class="k">issues</span>: [{ axis, severity, title, legalBasis }]
+  <span class="k">provenance</span>: { hasCredentials: <span class="n">true</span>,
+                aiGenerated: <span class="n">true</span>, validated,
+                generator, files }
+  <span class="k">createdAt</span>: serverTimestamp
+
+<span class="c">// Imaginile nu se stochează.
+// Brand kit-ul e public/brandkit.json în acest MVP.</span></code></pre></div>
+<div role="tabpanel" id="panel-score" aria-labelledby="tab-score" tabindex="0" hidden><pre><code><span class="c">// Scorul îl calculează codul, nu LLM-ul</span>
+<span class="k">scor_axă</span> = max(0, 100 − 40 × erori − 15 × atenționări)
+
+<span class="k">total</span> = 0,25 × brand
+      + 0,25 × accesibilitate
+      + 0,30 × legal
+      + 0,20 × ai_act
+
+<span class="c">// Înainte</span>
+brand            <span class="n">70</span>   2 atenționări
+accesibilitate   <span class="n">60</span>   1 eroare
+legal            <span class="n">30</span>   1 eroare + 2 atenționări
+ai_act           <span class="n">60</span>   1 eroare
+<span class="k">total</span>            <span class="n">54</span>
+
+<span class="c">// După Fix all rămâne doar „-70%”</span>
+legal            <span class="n">85</span>   restul 100
+<span class="k">total</span>            <span class="n">96</span>
+
+<span class="c">// Cu prețul de referință introdus de om</span>
+<span class="k">total</span>           <span class="n">100</span>
+
+<span class="c">// Notele informative nu scad scorul.</span></code></pre></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Lege și ROI ==================== -->
+    <section class="sec" id="lege-roi" aria-labelledby="roi-title" data-section>
+      <div class="wrap">
+        <blockquote class="quote reveal" id="roi-title">„GenStudio protejează brandurile din Fortune 500. PreFlight aduce aceeași protecție celorlalte milioane de afaceri din UE care fac reclame în Adobe Express, ca add-on, în produsul vostru. Fiecare utilizator PreFlight e un motiv în plus să rămână în Express.”</blockquote>
+
+        <div class="law-grid">
+          <article class="law reveal">
+            <h3>De când se aplică</h3>
+            <p>Art. 50 din EU AI Act se aplică din <b>2 august 2026</b>, iar Art. 50(4) nu a fost amânat de Digital Omnibus. Pe 2 decembrie 2026 expiră doar perioada de grație pentru marcarea tehnică a furnizorilor de sisteme AI aflate deja pe piață înainte de 2 aug. 2026.</p>
+          </article>
+          <article class="law reveal">
+            <h3>Când e obligatorie eticheta</h3>
+            <p>Eticheta vizibilă de la Art. 50(4) e <b>obligatorie</b> doar pentru conținut de tip deepfake: fotorealist, cu persoane, obiecte, locuri sau evenimente care par reale. Pentru o ilustrație stilizată e doar <b>recomandată</b>.</p>
+          </article>
+          <article class="law reveal">
+            <h3>Cât poate costa</h3>
+            <p>Art. 99(4): până la <b>15 mil. € sau 3%</b> din cifra de afaceri mondială. Pentru IMM-uri se aplică <b>valoarea mai mică</b>, conform Art. 99(6). La 2 mil. € cifră de afaceri, plafonul e de 60.000 €.</p>
+          </article>
+        </div>
+        <p class="safety reveal">PreFlight e un instrument de suport decizional, nu consultanță juridică. Semnalează riscul și explică temeiul, iar decizia finală rămâne la om.</p>
+
+        <h3 class="sub-title reveal">De ce nu e încă un GenStudio</h3>
+        <div class="table-scroll reveal" tabindex="0" role="region" aria-label="Comparație între alternative">
+          <table class="compare">
+            <thead><tr><th scope="col"><span class="sr-only">Criteriu</span></th><th scope="col">Review manual</th><th scope="col">Adobe GenStudio</th><th scope="col">Canva / alte editoare</th><th scope="col" class="us">PreFlight</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Pentru cine</th><td>Toți, cu efort</td><td>Enterprise</td><td>Toți</td><td class="us">IMM-uri, agenții, freelanceri din Express</td></tr>
+              <tr><th scope="row">Verificare de brand</th><td>Subiectivă</td><td>Da</td><td>Brand kit, fără audit</td><td class="us">Da, cu scor</td></tr>
+              <tr><th scope="row">Claim-uri legale</th><td>Doar dacă ai jurist</td><td>Fluxuri de conformitate</td><td>Nu</td><td class="us">Da, cu temei legal</td></tr>
+              <tr><th scope="row">AI Act / C2PA</th><td>Rar</td><td>Parțial</td><td>Nu</td><td class="us">Da, Content Credentials + Art. 50(4)</td></tr>
+              <tr><th scope="row">Fix automat în design</th><td>Nu</td><td>Prin regenerare</td><td>Nu</td><td class="us">Da, direct în document</td></tr>
+              <tr><th scope="row">Cost</th><td>~8 € / asset</td><td>Contract enterprise</td><td>Abonament editor</td><td class="us">De la 0 €, apoi 19 €/lună</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="sub-title reveal">Cât costă, la volumul tău</h3>
+        <div class="calc reveal">
+          <div class="calc-input">
+            <label for="calcRange">Reclame verificate pe lună: <output id="calcAssets" for="calcRange">200</output></label>
+            <input id="calcRange" type="range" min="10" max="1000" step="10" value="200" />
+            <div class="calc-scale" aria-hidden="true"><span>10</span><span>1.000</span></div>
+          </div>
+          <div class="calc-out">
+            <div class="calc-col">
+              <h4>Fără PreFlight</h4>
+              <p class="calc-big"><output id="calcManual">1.650 €</output><small>/lună</small></p>
+              <div class="bar"><span id="calcManualBar" class="bar-manual"></span></div>
+              <p>~20 min × 25 €/oră ≈ 8 € / asset, adică <b><output id="calcHours">66</output> ore</b> de review.</p>
+              <p class="calc-risk">Plus riscul unei amenzi ANPC sau până la 60.000 € pe Art. 99.</p>
+            </div>
+            <div class="calc-col calc-us">
+              <h4>Cu PreFlight, plan <output id="calcPlan">Agency</output></h4>
+              <p class="calc-big"><output id="calcPlanCost">99 €</output><small>/lună</small></p>
+              <div class="bar"><span id="calcPlanBar" class="bar-us"></span></div>
+              <p>Cost intern de procesare: 0,01–0,02 € / verificare, adică aproximativ <output id="calcInternal">4 €</output> pe lună.</p>
+              <p class="calc-ratio"><output id="calcRatio">De 16× mai ieftin</output></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="plans">
+          <article class="plan reveal">
+            <h4>Free</h4><p class="price-tag">0 €</p>
+            <ul><li>10 verificări/lună</li><li>1 brand kit</li><li>Distribuție prin marketplace-ul Express</li></ul>
+          </article>
+          <article class="plan plan-mid reveal">
+            <h4>Pro</h4><p class="price-tag">19 € <small>/utilizator/lună</small></p>
+            <ul><li>Verificări nelimitate (fair use)</li><li>3 brand kits</li><li>Rescrieri AI și istoric</li><li>~90% marjă brută la 60 verificări/lună</li></ul>
+          </article>
+          <article class="plan reveal">
+            <h4>Agency</h4><p class="price-tag">99 € <small>/lună, 5 locuri</small></p>
+            <ul><li>20 brand kits</li><li>Raport PDF de conformitate pentru clienți</li><li>Integrare Slack</li><li>Jurnal de audit exportabil</li></ul>
+          </article>
+        </div>
+        <p class="fineprint reveal">Model de preț propus pentru marketplace-ul Express. Costurile sunt estimări. Integrarea Slack din planul Agency e planificată.</p>
+      </div>
+    </section>
+
+    <!-- ==================== Juriu ==================== -->
+    <section class="sec sec-surface" id="juriu" aria-labelledby="jury-title" data-section>
+      <div class="wrap">
+        <header class="sec-head reveal">
+          <h2 id="jury-title">Criteriile juriului și întrebările grele.</h2>
+          <p>Țintele sunt autoevaluări din dosarul proiectului, nu note acordate. Răspunsurile sunt cele pe care le dăm și pe scenă.</p>
+        </header>
+        <div class="criteria">
+          <article class="crit reveal"><h3>Problem solving <small>25%</small></h3><p class="crit-n">22<small>/25</small></p><div class="meter" style="--v:.88"><span></span></div><p>Obligație legală activă, claim-uri interzise, accesibilitate. Exemplu concret: o reclamă de supliment.</p></article>
+          <article class="crit reveal"><h3>AI-driven innovation <small>25%</small></h3><p class="crit-n">21<small>/25</small></p><div class="meter" style="--v:.84"><span></span></div><p>LLM vision clasifică riscul de deepfake, detectează claim-uri și propune rescrieri în tonul brandului.</p></article>
+          <article class="crit reveal"><h3>Third-party integrations <small>15%</small></h3><p class="crit-n">13<small>/15</small></p><div class="meter" style="--v:.8667"><span></span></div><p>Adobe Express Add-on SDK și Document Sandbox, C2PA, Gemini API, Cloud Vision, Firebase.</p></article>
+          <article class="crit reveal"><h3>Technical excellence <small>25%</small></h3><p class="crit-n">20<small>/25</small></p><div class="meter" style="--v:.8"><span></span></div><p>Cod determinist pentru ce e măsurabil, AI doar pentru judecată. JSON cu schemă strictă, secrete pe server.</p></article>
+          <article class="crit reveal"><h3>Product experience &amp; demo <small>10%</small></h3><p class="crit-n">9<small>/10</small></p><div class="meter" style="--v:.9"><span></span></div><p>Fix live în Express: scorul urcă de la 54 la 96 în fața juriului.</p></article>
+          <article class="crit reveal"><h3>Bonus cost vs. value <small>+10</small></h3><p class="crit-n">8<small>/10</small></p><div class="meter" style="--v:.8"><span></span></div><p>~0,01–0,02 € per verificare, față de ~8 € pentru o verificare manuală de 20 de minute.</p></article>
+        </div>
+
+        <div class="faq reveal">
+          <details name="qa" open><summary>Prin ce diferă de GenStudio?</summary><p>GenStudio e enterprise, cu Workfront și contracte mari. PreFlight e pentru IMM-uri și agenții mici, în Express, de la 0 €. Îl completează, nu îl înlocuiește, și duce clienții spre el pe măsură ce cresc.</p></details>
+          <details name="qa"><summary>Ce faceți când LLM-ul halucinează?</summary><p>Trei protecții: schemă JSON strictă; fiecare problemă trebuie să citeze textul din design sau să aibă o casetă validă în imagine, altfel e eliminată automat în cod; scorul e calculat de cod, nu de LLM.</p></details>
+          <details name="qa"><summary>Cum decideți dacă imaginea e deepfake?</summary><p>Combinăm proveniența (Content Credentials spun dacă e generată cu AI) cu judecata vizuală a modelului: fotorealism, persoane sau locuri care par reale. Persoana fotorealistă din asset-ul A primește „obligatoriu”, iar ilustrația stilizată din asset-ul B primește „recomandat”.</p></details>
+          <details name="qa"><summary>Ce se întâmplă dacă imaginea nu are Content Credentials?</summary><p>Absența manifestului nu dovedește că imaginea nu e AI, pentru că metadatele se pot pierde. În acest caz decide doar analiza vizuală, cu severitate redusă la „atenționare”, și îi cerem utilizatorului imaginile sursă, ca să confirme proveniența.</p></details>
+          <details name="qa"><summary>Răspunderea juridică?</summary><p>PreFlight e suport decizional, nu consultanță juridică. Arată riscul și temeiul, iar decizia rămâne la om. Jurnalul de audit dovedește diligența, ceea ce e util în fața unei autorități.</p></details>
+          <details name="qa"><summary>GDPR: unde ajung imaginile?</summary><p>Funcțiile rulează în <code>europe-west1</code>. Imaginea e trimisă la LLM doar pentru analiză și nu e stocată de PreFlight; păstrăm hash-ul SHA-256 și rezultatul. Cheile sunt doar pe server.</p></details>
+          <details name="qa"><summary>De ce Express și nu Photoshop?</summary><p>Express e editorul echipelor mici pe care le țintim, iar SDK-ul de add-on-uri permite distribuție imediată prin marketplace. Arhitectura e portabilă: motorul de audit e un API.</p></details>
+          <details name="qa"><summary>Cum scalați costurile și ce ați face în următoarele 3 luni?</summary><p>Partea deterministă rulează în browser și nu costă nimic. Apelul LLM e singurul cost variabil, sub 2 cenți, iar cache-ul după hash evită apelurile repetate. Urmează reguli pe industrii (financiar, alcool, farma), o extensie pentru Photoshop, raport PDF semnat cu Adobe PDF Services Electronic Seal și verificare înainte de upload pentru Meta și Google Ads.</p></details>
+        </div>
+      </div>
+    </section>
   </main>
-  <script type="module" src="app.js"></script>
+
+  <footer class="ftr">
+    <div class="wrap">
+      <svg width="48" height="48" aria-hidden="true"><use href="#logo" /></svg>
+      <p class="ftr-line">Verifică înainte să decolezi.</p>
+      <a class="btn btn-primary magnetic" href="#launchpad">Deschide în Adobe Express</a>
+      <p class="ftr-legal">Hackathon Adobe · 7 noiembrie 2026 · Informații juridice verificate la această dată. PreFlight este un instrument de suport decizional și nu constituie consultanță juridică.</p>
+    </div>
+  </footer>
+
+  <template id="adTpl">
+    <div class="ad" role="img">
+      <p class="ad-title"><span class="v0">Vindecă oboseala în 7 zile!</span><span class="v1">Mai multă energie, zi de zi</span></p>
+      <p class="ad-sub"><span class="v0">Cel mai bun supliment din România</span><span class="v1">Formulă cu magneziu și vitamina B6</span></p>
+      <p class="ad-deal">-70% doar azi<span class="ad-ref"></span></p>
+      <span class="ad-cta">Comandă acum</span>
+      <img class="ad-photo" src="demo/hero-persoana.jpg" width="504" height="840" alt="" />
+      <span class="ad-label">Imagine generată cu AI</span>
+      <span class="ad-disc">Suplimentele alimentare nu înlocuiesc o dietă variată și echilibrată.</span>
+    </div>
+  </template>
 </body>
 </html>

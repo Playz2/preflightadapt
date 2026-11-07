@@ -115,14 +115,16 @@ function recomputeIssues() {
     .filter((i) => isAboveMinArea(i, W, H));
   const fallbackDiscId = allowedBlocks.find((b) => DISCOUNT_RE.test(b.text))?.id || allowedBlocks[0]?.id || null;
   const llm = adjusted.map((i, n) => {
-    const refIssue = isRefPriceIssue(i);
-    const validId = i.blockId && allowedBlocks.some((b) => b.id === i.blockId) ? i.blockId : null;
+    const visualOnly = i.legalBasis?.includes("12(c)") && i.region;
+    const refIssue = !visualOnly && isRefPriceIssue(i);
+    const validId = !visualOnly && i.blockId && allowedBlocks.some((b) => b.id === i.blockId) ? i.blockId : null;
     const targetId = refIssue ? (validId || fallbackDiscId) : validId;
     return {
       ...i,
       id: `llm-${n}`,
       blockId: targetId,
-      fix: refIssue && targetId ? { kind: "humanPrice", blockId: targetId }
+      fix: visualOnly ? null
+         : refIssue && targetId ? { kind: "humanPrice", blockId: targetId }
          : i.suggestedText && targetId ? { kind: "replaceText", blockId: targetId, text: i.suggestedText } : null,
     };
   });
@@ -251,7 +253,7 @@ function animateScore(to) {
   const col = to >= 85 ? "var(--green)" : to >= 50 ? "var(--amber-f)" : "var(--red)";
   ring.style.setProperty("--c", col);
   (function step(t) {
-    const q = Math.min(1, (t - t0) / 600), v = Math.round(from + (to - from) * (1 - (1 - q) ** 3));
+    const q = Math.max(0, Math.min(1, (t - t0) / 600)), v = Math.round(from + (to - from) * (1 - (1 - q) ** 3));
     num.textContent = v; ring.style.setProperty("--p", v);
     if (q < 1) requestAnimationFrame(step); else shown = to;
   })(t0);
@@ -340,10 +342,10 @@ function render(o) {
       const chip = $(`#chip-${a}`); chip.querySelector("b").textContent = v;
       chip.className = `chip ${v >= 85 ? "ok" : v >= 50 ? "warn" : "bad"}`;
     }
-    $("#status").textContent = o.cached ? "Rezultat din cache (aceeași imagine)" : `${open.length} probleme deschise`;
+    $("#status").textContent = o.cached ? "Rezultat din cache (aceeași imagine)" : open.length === 1 ? "1 problemă deschisă" : `${open.length} probleme deschise`;
   }
   const fixable = open.filter((i) => i.fix && i.fix.kind !== "humanPrice").length;
-  $("#fixall").disabled = !fixable || S.busy; $("#fixall").textContent = fixable ? `Fix all (${fixable} automate)` : "Nimic de reparat automat";
+  $("#fixall").disabled = !fixable || S.busy; $("#fixall").textContent = fixable ? `Fix all (${fixable} ${fixable === 1 ? "automat" : "automate"})` : "Nimic de reparat automat";
   $("#before").classList.toggle("on", S.view === "before"); $("#after").classList.toggle("on", S.view === "after");
 }
 
@@ -360,16 +362,19 @@ function dropzone(el, cb) {
   dropzone($("#sources"), addSources);
   $("#file").onchange = (e) => loadAd(e.target.files[0]);
   $("#srcfile").onchange = (e) => addSources([...e.target.files]);
-  $("#min-area").oninput = (e) => {
-    S.minAreaPct = Number(e.target.value);
-    const fmt = Number.isInteger(S.minAreaPct) ? String(S.minAreaPct) : S.minAreaPct.toFixed(1);
-    $("#min-area-val").textContent = `${fmt}%`;
-    $("#min-area-inline").textContent = fmt;
-    if (S.base && !S.busy && S.blocks.length) {
-      const sc = recomputeIssues();
-      render({ score: sc, cached: S.cached });
-    }
-  };
+  const minAreaEl = $("#min-area");
+  if (minAreaEl) {
+    minAreaEl.oninput = (e) => {
+      S.minAreaPct = Number(e.target.value);
+      const fmt = Number.isInteger(S.minAreaPct) ? String(S.minAreaPct) : S.minAreaPct.toFixed(1);
+      $("#min-area-val").textContent = `${fmt}%`;
+      $("#min-area-inline").textContent = fmt;
+      if (S.base && !S.busy && S.blocks.length) {
+        const sc = recomputeIssues();
+        render({ score: sc, cached: S.cached });
+      }
+    };
+  }
   $("#run").onclick = () => { S.base = S.current; runPreflight(); };
   $("#fixall").onclick = fixAll;
   $("#before").onclick = () => { S.view = "before"; render({}); };
