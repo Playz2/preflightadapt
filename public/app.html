@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PreFlight: sandbox de verificare</title>
+  <meta name="theme-color" content="#0F172A" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234338CA'/%3E%3Cpath d='M7 15 25 7l-5 18-4.4-6.4L7 15Z' fill='%23fff'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=4" />
+  <script>
+    // În pagina de prezentare, aplicația rulează într-un iframe, fără antet propriu.
+    if (window.self !== window.top) document.documentElement.classList.add("embedded");
+    // fixer.js scrie pe canvas cu Poppins: încărcăm greutățile înainte de primul Fix.
+    if (document.fonts) ["400", "500", "600", "700"].forEach((w) => document.fonts.load(w + " 20px Poppins"));
+  </script>
+</head>
+<body>
+  <header>
+    <a class="brand" href="./" aria-label="PreFlight, înapoi la prezentare">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="28" height="28" rx="7" fill="#4338CA" />
+        <path d="M6 13.6 22 6.2l-4.4 16-3.9-5.7-7.7-2.9Z" fill="#fff" />
+        <circle cx="25" cy="25" r="6.2" fill="#15803D" stroke="#0F172A" stroke-width="1.5" />
+        <path d="m22.3 25 1.9 1.9 3.5-3.8" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <span class="name">PreFlight</span>
+      <span class="tag">Verifică înainte să decolezi.</span>
+    </a>
+    <div class="kit" id="kit"></div>
+  </header>
+
+  <main>
+    <h1 class="sr-only">PreFlight: sandbox de verificare</h1>
+    <section class="left" aria-label="Reclama verificată">
+      <label id="empty" class="drop big">
+        <input id="file" class="sr-only" type="file" accept="image/png,image/jpeg" />
+        <svg class="drop-icon" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 11 21 3l-5.2 18-4.6-6.8L3 11Z" /><path d="M11.2 14.2 21 3" />
+        </svg>
+        <strong>Trage aici reclama</strong>
+        <span>PNG sau JPG exportat din Adobe Express, sau alege un fișier</span>
+      </label>
+
+      <div id="stage" hidden>
+        <div class="toolbar">
+          <div class="seg" role="group" aria-label="Versiunea afișată"><button id="before">Înainte</button><button id="after" class="on">După</button></div>
+          <div class="spacer"></div>
+          <button id="reset" class="ghost">Reia de la original</button>
+          <button id="download" class="ghost">Descarcă PNG</button>
+        </div>
+        <div class="canvaswrap"><canvas id="view"></canvas></div>
+        <label id="sources" class="drop small">
+          <input id="srcfile" class="sr-only" type="file" accept="image/*" multiple />
+          <b>Imagini sursă (opțional).</b> Trage aici imaginile originale din Firefly, pentru verificarea Content Credentials.
+        </label>
+      </div>
+    </section>
+
+    <aside class="panel" aria-label="Rezultatul verificării">
+      <div class="panel-top">
+        <div id="ring" class="ring"><div><span id="score">-</span><small>din 100</small></div></div>
+        <div class="chips">
+          <div id="chip-brand" class="chip"><b>-</b><span>Brand</span></div>
+          <div id="chip-accessibility" class="chip"><b>-</b><span>Accesib.</span></div>
+          <div id="chip-legal" class="chip"><b>-</b><span>Legal</span></div>
+          <div id="chip-ai_act" class="chip"><b>-</b><span>AI Act</span></div>
+        </div>
+      </div>
+      <div id="prov" class="prov"></div>
+      <div id="status" class="status" role="status"></div>
+      <div id="issues" class="issues"></div>
+      <div class="actions">
+        <button id="fixall" class="primary" disabled>Fix all</button>
+        <button id="run" class="secondary">Re-verifică</button>
+      </div>
+      <p class="disclaimer">Suport decizional, nu consultanță juridică. Decizia finală rămâne la tine.</p>
+    </aside>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

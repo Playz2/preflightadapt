@@ -9,7 +9,7 @@ const API_BASE = "";
 const $ = (s) => document.querySelector(s);
 const S = { kit: null, original: null, base: null, current: null, blocks: [], issues: [],
             provenance: { hasCredentials: false, aiGenerated: false, files: [] }, sources: [],
-            scoreBefore: null, view: "after", busy: false };
+            scoreBefore: null, view: "after", busy: false, labelApplied: false };
 
 // ---------------- utilitare ----------------
 async function fileToCanvas(file) {
@@ -38,8 +38,8 @@ async function api(path, body) {
 
 // ---------------- AI Act: decizia finală (cod), pe baza verdictului vizual (AI) + C2PA ----------------
 function aiActIssues(d) {
-  const labeled = S.blocks.some((b) => /generat(ă|a)?\s+cu\s+ai/i.test(b.text));
-  if (labeled || !d) return [];
+  const labeled = S.blocks.some((b) => /generat(ă|a)?\s+cu\s+a[il1|](?![\p{L}\p{N}])/iu.test(b.text));
+  if (S.labelApplied || labeled || !d) return [];
   if (d.disclosureRequired) return [{ id: "ai-label", axis: "ai_act", severity: S.provenance.aiGenerated ? "error" : "warning",
     title: "Imagine AI fotorealistă fără etichetă", explanation: d.reasoning,
     legalBasis: "EU AI Act, art. 50(4)", fix: { kind: "label" } }];
@@ -66,9 +66,13 @@ async function runPreflight() {
     // 3) auditul AI
     const ai = await api("/api/audit", { imageBase64: b64, blocks: S.blocks.map(({ id, text }) => ({ id, text })),
                                          brandKit: S.kit, provenance: S.provenance });
-    const llm = ai.issues.map((i, n) => ({ ...i, id: `llm-${n}`,
-      fix: i.needsHumanInput ? { kind: "humanPrice", blockId: i.blockId }
-         : i.suggestedText && i.blockId ? { kind: "replaceText", blockId: i.blockId, text: i.suggestedText } : null }));
+    const llm = ai.issues.map((i, n) => {
+      const visualOnly = i.legalBasis?.includes("12(c)") && i.region;
+      return { ...i, id: `llm-${n}`, blockId: visualOnly ? null : i.blockId,
+        fix: visualOnly ? null
+           : i.needsHumanInput ? { kind: "humanPrice", blockId: i.blockId }
+           : i.suggestedText && i.blockId ? { kind: "replaceText", blockId: i.blockId, text: i.suggestedText } : null };
+    });
     S.issues = [...det, ...llm, ...aiActIssues(ai.aiDisclosure)];
     const sc = score(S.issues);
     if (S.scoreBefore === null) S.scoreBefore = sc.total;
@@ -84,7 +88,10 @@ async function runPreflight() {
 }
 
 async function fix(list) {
-  for (const i of list) i.fixed = true;
+  for (const i of list) {
+    i.fixed = true;
+    if (i.fix?.kind === "label") S.labelApplied = true;
+  }
   S.current = applyFixes(S.base, S.blocks, S.issues, S.kit);
   S.view = "after";
   render({ score: score(S.issues) });          // feedback instant
@@ -103,7 +110,7 @@ function logAudit(sc) {
 // ---------------- încărcare fișiere ----------------
 async function loadAd(file) {
   S.original = await fileToCanvas(file); S.base = S.original; S.current = S.original;
-  S.issues = []; S.blocks = []; S.scoreBefore = null;
+  S.issues = []; S.blocks = []; S.scoreBefore = null; S.labelApplied = false;
   S.sources = [await readProvenance(file)];
   S.provenance = mergeProvenance(S.sources);
   $("#empty").hidden = true; $("#stage").hidden = false;
@@ -128,15 +135,22 @@ function drawStage() {
   const ctx = c.getContext("2d"); ctx.drawImage(src, 0, 0);
   if (S.view === "after" && S.current === S.base) {          // marcaje de diagnostic
     const k = src.width / 1080;
-    S.issues.filter((i) => !i.fixed && i.blockId).forEach((i, n) => {
-      const b = S.blocks.find((x) => x.id === i.blockId); if (!b) return;
+    S.issues.filter((i) => !i.fixed && (i.blockId || i.region)).forEach((i, n) => {
+      const b = i.blockId ? S.blocks.find((x) => x.id === i.blockId) : null;
+      const r = !b && i.region ? {
+        x: (i.region[1] / 1000) * src.width,
+        y: (i.region[0] / 1000) * src.height,
+        w: ((i.region[3] - i.region[1]) / 1000) * src.width,
+        h: ((i.region[2] - i.region[0]) / 1000) * src.height,
+      } : b?.bbox;
+      if (!r) return;
       const col = i.severity === "error" ? "#B91C1C" : i.severity === "warning" ? "#B45309" : "#4338CA";
       ctx.strokeStyle = col; ctx.lineWidth = 3 * k; ctx.setLineDash([8 * k, 5 * k]);
-      ctx.strokeRect(b.bbox.x - 6 * k, b.bbox.y - 6 * k, b.bbox.w + 12 * k, b.bbox.h + 12 * k);
+      ctx.strokeRect(r.x - 6 * k, r.y - 6 * k, r.w + 12 * k, r.h + 12 * k);
       ctx.setLineDash([]); ctx.fillStyle = col;
-      ctx.beginPath(); ctx.arc(b.bbox.x - 6 * k, b.bbox.y - 6 * k, 14 * k, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(r.x - 6 * k, r.y - 6 * k, 14 * k, 0, 7); ctx.fill();
       ctx.fillStyle = "#fff"; ctx.font = `700 ${16 * k}px Poppins`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillText(String(n + 1), b.bbox.x - 6 * k, b.bbox.y - 5 * k); ctx.textAlign = "start";
+      ctx.fillText(String(n + 1), r.x - 6 * k, r.y - 5 * k); ctx.textAlign = "start";
     });
   }
 }
@@ -147,7 +161,7 @@ function animateScore(to) {
   const col = to >= 85 ? "var(--green)" : to >= 50 ? "var(--amber-f)" : "var(--red)";
   ring.style.setProperty("--c", col);
   (function step(t) {
-    const q = Math.min(1, (t - t0) / 600), v = Math.round(from + (to - from) * (1 - (1 - q) ** 3));
+    const q = Math.max(0, Math.min(1, (t - t0) / 600)), v = Math.round(from + (to - from) * (1 - (1 - q) ** 3));
     num.textContent = v; ring.style.setProperty("--p", v);
     if (q < 1) requestAnimationFrame(step); else shown = to;
   })(t0);
@@ -190,10 +204,10 @@ function render(o) {
       const chip = $(`#chip-${a}`); chip.querySelector("b").textContent = v;
       chip.className = `chip ${v >= 85 ? "ok" : v >= 50 ? "warn" : "bad"}`;
     }
-    $("#status").textContent = o.cached ? "Rezultat din cache (aceeași imagine)" : `${open.length} probleme deschise`;
+    $("#status").textContent = o.cached ? "Rezultat din cache (aceeași imagine)" : open.length === 1 ? "1 problemă deschisă" : `${open.length} probleme deschise`;
   }
   const fixable = open.filter((i) => i.fix && i.fix.kind !== "humanPrice").length;
-  $("#fixall").disabled = !fixable || S.busy; $("#fixall").textContent = fixable ? `Fix all (${fixable} automate)` : "Nimic de reparat automat";
+  $("#fixall").disabled = !fixable || S.busy; $("#fixall").textContent = fixable ? `Fix all (${fixable} ${fixable === 1 ? "automat" : "automate"})` : "Nimic de reparat automat";
   $("#before").classList.toggle("on", S.view === "before"); $("#after").classList.toggle("on", S.view === "after");
 }
 
@@ -217,5 +231,5 @@ function dropzone(el, cb) {
   $("#download").onclick = () => S.current.toBlob((b) => {
     const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "preflight-aprobat.png"; a.click();
   });
-  $("#reset").onclick = () => { S.current = S.base = S.original; S.issues = []; S.scoreBefore = null; shown = 0; runPreflight(); };
+  $("#reset").onclick = () => { S.current = S.base = S.original; S.issues = []; S.scoreBefore = null; S.labelApplied = false; shown = 0; runPreflight(); };
 })();

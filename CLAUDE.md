@@ -38,8 +38,8 @@ preflightadapt/
 - Proiect Firebase: `preflightadapt` (plan Blaze), Firestore în eur3, Cloud Vision API activat
 - URL: https://preflightadapt.web.app
 - Secret: `GEMINI_API_KEY` (în Secret Manager, citit cu defineSecret). Nu pune niciodată cheia în cod.
-- Model Gemini: `gemini-3.8-flash` (modelele 2.5 nu mai sunt disponibile). Rezervă: `gemini-3.7-flash`. SDK-ul folosește API v1, unde `gemini-flash-latest` nu există.
-- Cache în Firestore (colecția `cache`) după hash-ul imaginii. Se salvează doar răspunsurile reușite. Cheia auditului are o versiune (`audit-v4-`): crește-o când schimbi prompt-ul sau schema.
+- Model Gemini: `gemini-4-argon` (`thinkingLevel: "MEDIUM"`). Rezervă: `gemini-3.8-flash` (`thinkingLevel: "LOW"`). Modelele 2.5 nu mai sunt disponibile, iar SDK-ul folosește API v1, unde `gemini-flash-latest` nu există.
+- Cache în Firestore (colecția `cache`) după hash-ul imaginii. Se salvează doar răspunsurile reușite. Cheia auditului are o versiune (`audit-v5-`): crește-o când schimbi prompt-ul sau schema.
 
 ## Comenzi
 - Deploy totul: `firebase deploy`

@@ -68,8 +68,11 @@ export function applyFixes(baseCanvas, blocks, issues, kit) {
   for (const s of state.values()) drawBlock(ctx, s);
 
   if (disclaimer) {
-    ctx.font = `400 ${Math.round(15 * k)}px Poppins, sans-serif`; ctx.textBaseline = "alphabetic";
-    ctx.fillStyle = "#334155"; ctx.fillText(kit.requiredDisclaimer, 28 * k, H - 30 * k);
+    ctx.font = `400 ${Math.round(15 * k)}px Poppins, sans-serif`;
+    const dw = ctx.measureText(kit.requiredDisclaimer).width, dh = 26 * k, dx = 20 * k, dy = H - 46 * k;
+    ctx.fillStyle = "rgba(255,251,245,0.92)"; roundRect(ctx, dx, dy, dw + 16 * k, dh, 6 * k); ctx.fill();
+    ctx.fillStyle = "#1E293B"; ctx.textBaseline = "middle";
+    ctx.fillText(kit.requiredDisclaimer, dx + 8 * k, dy + dh / 2 + 1);
   }
   if (label) {
     const txt = "Imagine generată cu AI";

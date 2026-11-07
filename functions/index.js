@@ -11,8 +11,10 @@ initializeApp();
 setGlobalOptions({ region: "europe-west1", memory: "512MiB", timeoutSeconds: 60 });
 const db = getFirestore();
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
-const MODEL = "gemini-3.8-flash"; // <- pune numele
-const FALLBACK_MODEL = "gemini-3.7-flash"; // trebuie să existe pe API v1 (implicit în SDK)
+const MODELS = [
+  { name: "gemini-4-argon", thinkingLevel: "MEDIUM" },
+  { name: "gemini-3.8-flash", thinkingLevel: "LOW" },
+]; // trebuie să existe pe API v1 (implicit în SDK)
 const visionClient = new vision.ImageAnnotatorClient();
 
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
@@ -136,12 +138,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function generateWithRetry(ai, params) {
   const start = Date.now();
   let lastError;
-  for (const model of [MODEL, FALLBACK_MODEL]) {
+  for (const { name: model, thinkingLevel } of MODELS) {
     for (let attempt = 1; attempt <= ATTEMPTS_PER_MODEL; attempt++) {
       const remaining = TOTAL_BUDGET_MS - (Date.now() - start);
       if (remaining < MIN_ATTEMPT_MS) throw lastError || new Error("Timp epuizat pentru audit");
       try {
         return await ai.models.generateContent({ ...params, model, config: { ...params.config,
+          thinkingConfig: { thinkingLevel },
           httpOptions: { timeout: Math.min(ATTEMPT_TIMEOUT_MS, remaining) } } });
       } catch (e) {
         lastError = e;
@@ -170,15 +173,25 @@ function cleanIssues(issues, blocks) {
     const confidence = ["high", "medium", "low"].includes(i.confidence) ? i.confidence : "medium";
     // o problemă incertă nu poate costa cât o eroare sigură
     const severity = confidence === "low" && i.severity === "error" ? "warning" : i.severity;
+    const lb = i.legalBasis || "";
+    const legalBasis = lb.includes("1169/2011") ? "Reg. (UE) 1169/2011 art. 7(3)"
+      : lb.includes("1924/2006") && lb.includes("12(c)") ? "Reg. (CE) 1924/2006 art. 12(c)"
+      : lb.includes("1924/2006") ? "Reg. (CE) 1924/2006"
+      : lb.includes("158/2008") ? "Legea 158/2008"
+      : lb.includes("98/6") ? "Dir. 98/6/CE art. 6a"
+      : lb.includes("363/2007") ? "Legea 363/2007"
+      : lb || null;
+    const isVisualMedic = legalBasis === "Reg. (CE) 1924/2006 art. 12(c)" && !!region;
     // rescrierile se aplică doar pe un bloc existent și nu au voie să fie mai lungi decât el
     let suggestions = [];
-    if (b && !i.needsHumanInput) {
+    if (b && !i.needsHumanInput && !isVisualMedic) {
       const all = [...new Set([...(i.suggestions || []), i.suggestedText].map((s) => (s || "").trim()).filter(Boolean))];
       const fit = all.filter((s) => s.length <= b.text.length);
       suggestions = fit.length ? fit : all.sort((x, y) => x.length - y.length).slice(0, 1);
     }
-    out.push({ ...i, blockId: b ? b.id : null, region, confidence, severity, suggestions, suggestedText: suggestions[0] || null,
-      needsHumanInput: !!(b && i.needsHumanInput) }); // pe o problemă doar din imagine nu are ce completa omul
+    out.push({ ...i, legalBasis, blockId: b && !isVisualMedic ? b.id : null, region, confidence, severity, suggestions,
+      suggestedText: suggestions[0] || null,
+      needsHumanInput: !!(b && !isVisualMedic && i.needsHumanInput) }); // pe o problemă doar din imagine nu are ce completa omul
   }
   return out;
 }
@@ -187,7 +200,7 @@ exports.audit = onRequest({ cors: true, secrets: [GEMINI_API_KEY] }, handler(asy
   const { imageBase64, blocks = [], brandKit = {}, provenance = {} } = body;
   if (!imageBase64) throw new Error("imageBase64 lipsă");
   // la schimbarea prompt-ului sau a schemei crește versiunea, ca să nu primim răspunsuri vechi din cache
-  const key = "audit-v4-" + sha(imageBase64 + JSON.stringify(provenance) + (brandKit.name || ""));
+  const key = "audit-v5-" + sha(imageBase64 + JSON.stringify(provenance) + (brandKit.name || ""));
   return cached(key, async () => {
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY.value() });
     const resp = await generateWithRetry(ai, {
@@ -196,9 +209,7 @@ exports.audit = onRequest({ cors: true, secrets: [GEMINI_API_KEY] }, handler(asy
         { text: JSON.stringify({ blocks, brandKit, provenance }) },
       ] }],
       config: { systemInstruction: SYSTEM_PROMPT, responseMimeType: "application/json",
-                responseSchema: SCHEMA, temperature: 0.2,
-                // fără limită, modelul „gândește” până la 40 s, peste limita de timp a funcției
-                thinkingConfig: { thinkingLevel: "LOW" } },
+                responseSchema: SCHEMA, temperature: 0.2 },
     });
     const out = JSON.parse(resp.text);
     out.issues = cleanIssues(out.issues, blocks);
