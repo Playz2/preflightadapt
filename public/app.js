@@ -1,4 +1,4 @@
-import { analyze, boxAreaPct, score } from "./engine.js";
+import { analyze, boxAreaPct, checkAiAct, score } from "./engine.js";
 import { applyFixes } from "./fixer.js";
 import { readProvenance, mergeProvenance } from "./provenance.js";
 
@@ -135,14 +135,7 @@ function recomputeIssues() {
 // ---------------- AI Act: decizia finală (cod), pe baza verdictului vizual (AI) + C2PA ----------------
 function aiActIssues(d) {
   const labeled = S.blocks.some((b) => /generat(ă|a)?\s+cu\s+a[il1|](?![\p{L}\p{N}])/iu.test(b.text));
-  if (S.labelApplied || labeled || !d) return [];
-  if (d.disclosureRequired) return [{ id: "ai-label", axis: "ai_act", severity: S.provenance.aiGenerated ? "error" : "warning",
-    title: "Imagine AI fotorealistă fără etichetă", explanation: d.reasoning,
-    legalBasis: "EU AI Act, art. 50(4)", fix: { kind: "label" } }];
-  if (S.provenance.aiGenerated) return [{ id: "ai-label", axis: "ai_act", severity: "info",
-    title: "Conținut AI: etichetă recomandată, nu obligatorie", explanation: d.reasoning,
-    legalBasis: "Bună practică (Codul de conduită UE)", fix: { kind: "label" } }];
-  return [];
+  return checkAiAct(d, S.provenance, S.labelApplied || labeled);
 }
 
 // ---------------- fluxul principal ----------------
@@ -173,12 +166,14 @@ async function runPreflight() {
     console.error(e); render({ error: e.message });
   } finally {
     S.busy = false;
+    $("#new-image").disabled = false;
     const n = S.issues.filter((i) => i.fix && !i.fixed && i.fix.kind !== "humanPrice").length;
     $("#fixall").disabled = !n;
   }
 }
 
 async function fix(list) {
+  if (S.busy) return;
   await Promise.all([400, 500, 600, 700].map((w) => document.fonts?.load(w + " 24px Poppins")).concat(document.fonts?.ready));
   for (const i of list) {
     i.fixed = true;
@@ -201,13 +196,35 @@ function logAudit(sc) {
 
 // ---------------- încărcare fișiere ----------------
 async function loadAd(file) {
-  S.original = await fileToCanvas(file); S.base = S.original; S.current = S.original;
-  S.issues = []; S.blocks = []; S.llmIssues = []; S.aiDisclosure = null; S.scoreBefore = null; S.labelApplied = false;
-  S.sources = [await readProvenance(file)];
-  S.provenance = mergeProvenance(S.sources);
-  $("#empty").hidden = true; $("#stage").hidden = false;
-  render({});
-  runPreflight();
+  if (!file || S.busy) return;
+  S.busy = true;
+  $("#new-image").disabled = true;
+  try {
+    const original = await fileToCanvas(file);
+    const source = await readProvenance(file);
+    S.original = S.base = S.current = original;
+    S.issues = []; S.blocks = []; S.llmIssues = []; S.aiDisclosure = null; S.scoreBefore = null; S.labelApplied = false;
+    S.sources = [source]; S.provenance = mergeProvenance(S.sources);
+    S.cached = false; S.view = "after"; shown = 0;
+    cancelAnimationFrame(scoreFrame);
+    $("#srcfile").value = "";
+    $("#score").textContent = "-";
+    $("#ring").style.removeProperty("--p");
+    $("#ring").style.removeProperty("--c");
+    for (const axis of Object.keys(AX)) {
+      const chip = $(`#chip-${axis}`);
+      chip.querySelector("b").textContent = "-";
+      chip.className = "chip";
+    }
+    $("#empty").hidden = true; $("#stage").hidden = false;
+    S.busy = false;
+    await runPreflight();
+  } catch (e) {
+    render({ error: `Imaginea nu a putut fi încărcată: ${e.message}` });
+  } finally {
+    S.busy = false;
+    $("#new-image").disabled = false;
+  }
 }
 async function addSources(files) {
   for (const f of files) S.sources.push(await readProvenance(f));
@@ -247,15 +264,16 @@ function drawStage() {
   }
 }
 
-let shown = 0;
+let shown = 0, scoreFrame = 0;
 function animateScore(to) {
+  cancelAnimationFrame(scoreFrame);
   const ring = $("#ring"), num = $("#score"), from = shown, t0 = performance.now();
   const col = to >= 85 ? "var(--green)" : to >= 50 ? "var(--amber-f)" : "var(--red)";
   ring.style.setProperty("--c", col);
   (function step(t) {
     const q = Math.max(0, Math.min(1, (t - t0) / 600)), v = Math.round(from + (to - from) * (1 - (1 - q) ** 3));
     num.textContent = v; ring.style.setProperty("--p", v);
-    if (q < 1) requestAnimationFrame(step); else shown = to;
+    if (q < 1) scoreFrame = requestAnimationFrame(step); else shown = to;
   })(t0);
 }
 
@@ -346,6 +364,7 @@ function render(o) {
   }
   const fixable = open.filter((i) => i.fix && i.fix.kind !== "humanPrice").length;
   $("#fixall").disabled = !fixable || S.busy; $("#fixall").textContent = fixable ? `Fix all (${fixable} ${fixable === 1 ? "automat" : "automate"})` : "Nimic de reparat automat";
+  $("#new-image").disabled = S.busy;
   $("#before").classList.toggle("on", S.view === "before"); $("#after").classList.toggle("on", S.view === "after");
 }
 
@@ -361,6 +380,11 @@ function dropzone(el, cb) {
   dropzone($("#empty"), (f) => loadAd(f[0]));
   dropzone($("#sources"), addSources);
   $("#file").onchange = (e) => loadAd(e.target.files[0]);
+  $("#new-image").onclick = () => {
+    if (S.busy) return;
+    $("#file").value = ""; // permite și selectarea aceluiași fișier
+    $("#file").click();
+  };
   $("#srcfile").onchange = (e) => addSources([...e.target.files]);
   const minAreaEl = $("#min-area");
   if (minAreaEl) {

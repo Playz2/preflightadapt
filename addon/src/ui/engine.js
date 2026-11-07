@@ -95,6 +95,33 @@ export function checkDisclaimer(scan, kit) {
         explanation: kit.requiredDisclaimer, legalBasis: "Ghid de brand", fix: { kind: "disclaimer" } }];
 }
 
+// ---------- AI Act: regula deterministă pentru riscul de deepfake ----------
+// Art. 3(60), 50(4): persoane, obiecte, locuri sau evenimente aparent autentice.
+// Indiciile vizuale vin din audit; motorul nu detectează singur conținutul imaginii.
+export function checkAiAct(disclosure, provenance = {}, labeled = false) {
+  if (labeled || !disclosure) return [];
+  const aiGenerated = provenance?.aiGenerated === true;
+  const realistic = disclosure.photorealistic === true && disclosure.depictsRealPersonLike === true;
+  const deepfakeRisk = realistic && (aiGenerated || disclosure.disclosureRequired === true);
+  if (deepfakeRisk) return [{
+    id: "ai-label", axis: "ai_act", severity: aiGenerated ? "error" : "warning",
+    title: aiGenerated ? "Posibil deepfake fără etichetă AI" : "Posibil deepfake: verifică proveniența",
+    explanation: (aiGenerated
+      ? "Proveniența indică AI, iar analiza vizuală indică un conținut fotorealist care poate fi confundat cu ceva real. Adaugă eticheta vizibilă «Imagine generată cu AI»."
+      : "Analiza vizuală indică un posibil deepfake, dar proveniența AI nu este confirmată. Verifică sursa; dacă imaginea este generată sau manipulată cu AI, adaugă eticheta vizibilă.")
+      + " Art. 50(4) se aplică din 2 august 2026; termenul de 2 decembrie privește doar marcarea tehnică a furnizorilor conform art. 50(2).",
+    legalBasis: "EU AI Act, art. 3(60) și art. 50(4)", fix: { kind: "label" },
+  }];
+  if (aiGenerated) return [{
+    id: "ai-label", axis: "ai_act", severity: "info",
+    title: "Conținut AI: etichetă recomandată, nu obligatorie",
+    explanation: "Analiza vizuală nu întrunește criteriile de risc deepfake. Pentru o ilustrație stilizată, eticheta este o recomandare de transparență și nu scade scorul.",
+    legalBasis: "Bună practică de transparență; EU AI Act, art. 50(4): deepfake",
+    fix: { kind: "label" },
+  }];
+  return [];
+}
+
 // ---------- 4. scor ----------
 const WEIGHTS = { brand: 0.25, accessibility: 0.25, legal: 0.30, ai_act: 0.20 };
 export function score(issues) {
